@@ -1,0 +1,1 @@
+A qq bot base on nonebot2
