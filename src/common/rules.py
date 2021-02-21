@@ -15,12 +15,7 @@ from functools import reduce
 from nonebot.rule import Rule
 from nonebot.typing import T_State
 from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import (
-    Event,
-    GroupMessageEvent,
-    GroupDecreaseNoticeEvent,
-    GroupIncreaseNoticeEvent,
-    HonorNotifyEvent)
+from nonebot.adapters.cqhttp.event import Event, GroupMessageEvent
 
 
 swfile = Path(__file__).parent/'group_func_off.json'
@@ -103,8 +98,8 @@ def comman_rule(match_ev: Event, **kw) -> Callable:
     :param match_ev:事件类型，从nonebot.adapters.cqhttp.event中导入相应类型
     可传入其他变量过滤时间子类型，如sub_type, honor_type等, 参数应为str或Iterable
     example01: comman_rule(PrivateMessageEvent)可过滤出私聊规则
-    example01: comman_rule(HonorNotifyEvent, honor_type="talkative")可过滤出龙王变更规则
-    example02: comman_rule(GroupDecreaseNoticeEvent, sub_type=("leave","kick"))可过滤出群成员减少规则，并且不包含登录号被踢("kick_me")的情况
+    example02: comman_rule(HonorNotifyEvent, honor_type="talkative")可过滤出龙王变更规则
+    example03: comman_rule(GroupDecreaseNoticeEvent, sub_type=("leave","kick"))可过滤出群成员减少规则，并且不包含登录号被踢("kick_me")的情况
     '''
     async def ev_type_checker(bot:Bot, event: Event, state: T_State) -> bool:
         if isinstance(event, match_ev):
@@ -125,5 +120,4 @@ def comman_rule(match_ev: Event, **kw) -> Callable:
                         return getattr(event, k) in v
                 else:
                     raise AttributeError(f'Irregular incoming parameters: {kw}')
-
     return ev_type_checker
