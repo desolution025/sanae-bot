@@ -10,6 +10,8 @@ python = "^3.8"
 nonebot2 = "2.0.0a10"
 ujson = "4.0.2"
 mysql-connector = "^2.2.9"
+cn2an = "^0.5.9"
+Pillow = "^8.1.0"
 
 [tool.poetry.dev-dependencies]
 

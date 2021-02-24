@@ -1,11 +1,11 @@
-'''
+"""
 定义可能会复用的通用规则，暂时包括：
 分群功能开关规则
 登录号被踢规则
 群成员增加规则(剔除登录号加群)
 群成员减少规则(剔除登录号被踢)
 其他无特殊过滤的通用规则可使用common_rule
-'''
+"""
 
 
 from pathlib import Path
@@ -21,10 +21,10 @@ from nonebot.adapters.cqhttp.event import Event, GroupMessageEvent
 swfile = Path(__file__).parent/'group_func_off.json'
 group_func_off = {}
 
-'''
+"""
 数据结构
 {'gid': ['功能1', '功能2']}
-'''
+"""
 def store_sw():
     '''
     将群功能开关记录在json文件上的函数
@@ -41,11 +41,16 @@ with swfile.open(encoding='utf-8') as j:
 func_ls = []  # 存储所有功能名字的列表，建立功能开关时自动存入，用来查询是否是真实存在的功能
 
 def sv_sw(name: str) -> Callable:
-    '''
-    使用此规则可以控制在不同群内的功能开关
-    传入规则时使用sv_sw(name: str)
-    使用相同name的功能以相同的开关控制
-    '''
+    """
+    :Summary:
+        
+        使用此规则可以控制在不同群内的功能开关
+    
+    :Usage:
+        
+        传入规则时使用sv_sw(name: str)
+        使用相同name的功能以相同的开关控制
+    """
     if name not in func_ls:
         func_ls.append(name)
     async def _checker(bot: Bot, event: GroupMessageEvent, state: T_State):
@@ -57,50 +62,23 @@ def sv_sw(name: str) -> Callable:
     return Rule(_checker)
 
 
-# async def kick_me(bot: Bot, event: GroupDecreaseNoticeEvent, state: T_State) -> bool:
-#     '''
-#     登录号被踢出规则
-#     '''
-#     if isinstance(event, GroupDecreaseNoticeEvent) and event.sub_type == 'kick_me':
-#         return True
-
-
-# async def group_increase(bot: Bot, event: GroupIncreaseNoticeEvent, state: T_State) -> bool:
-#     '''
-#     群成员增加规则，剔除了bot加群的情况
-#     '''
-#     if isinstance(event, GroupIncreaseNoticeEvent) and event.user_id != event.self_id:
-#         return True
-
-
-# async def group_decrease(bot: Bot, event: GroupDecreaseNoticeEvent, state: T_State) -> bool:
-#     '''
-#     群成员减少规则，剔除了登录号被踢的情况
-#     '''
-#     if isinstance(event, GroupDecreaseNoticeEvent) and event.sub_type != "kick_me":
-#         return True
-
-
-# def honor_change(honor_type: str) -> Callable:
-#     '''
-#     匹配群荣誉变更类型的规则
-#     :param honor_type:荣誉类型 "talkative","performer","emotion"，分别表示龙王、群聊之火、快乐源泉
-#     '''
-#     async def honor_matcher(bot: Bot, event: HonorNotifyEvent, state: T_State) -> bool:
-#         if isinstance(event, HonorNotifyEvent) and event.honor_type == honor_type:
-#             return True
-#     return honor_matcher
-
-
 def comman_rule(match_ev: Event, **kw) -> Callable:
-    '''
-    只是简单的匹配事件类型而没有其它过滤规则时可使用此函数输出通用规则
-    :param match_ev:事件类型，从nonebot.adapters.cqhttp.event中导入相应类型
-    可传入其他变量过滤时间子类型，如sub_type, honor_type等, 参数应为str或Iterable
-    example01: comman_rule(PrivateMessageEvent)可过滤出私聊规则
-    example02: comman_rule(HonorNotifyEvent, honor_type="talkative")可过滤出龙王变更规则
-    example03: comman_rule(GroupDecreaseNoticeEvent, sub_type=("leave","kick"))可过滤出群成员减少规则，并且不包含登录号被踢("kick_me")的情况
-    '''
+    """
+    :Summary:
+
+        只是简单的匹配事件类型而没有其它过滤规则时可使用此函数输出通用规则
+
+    :Args:
+
+        ``match_ev``: 事件类型，从nonebot.adapters.cqhttp.event中导入相应类型
+        ``**kw``: 可传入其他变量过滤时间子类型，如sub_type, honor_type等, 参数应为str或Iterable
+
+    :Examples:
+
+        ``example01``: comman_rule(PrivateMessageEvent)可过滤出私聊规则
+        ``example02``: comman_rule(HonorNotifyEvent, honor_type="talkative")可过滤出龙王变更规则
+        ``example03``: comman_rule(GroupDecreaseNoticeEvent, sub_type=("leave","kick"))可过滤出群成员减少规则，并且不包含登录号被踢("kick_me")的情况
+    """
     async def ev_type_checker(bot:Bot, event: Event, state: T_State) -> bool:
         if isinstance(event, match_ev):
             if not kw:

@@ -158,3 +158,6 @@ cython_debug/
 
 # config
 *.ini
+
+# media resource files
+res/*

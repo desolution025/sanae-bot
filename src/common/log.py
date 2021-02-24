@@ -1,6 +1,6 @@
-'''
+"""
 使用这个模块中的logger以自动记录日志到指定文件
-'''
+"""
 
 
 from pathlib import Path

@@ -22,11 +22,16 @@ dbcfg = DBConfig(**dict(cfg.items("client")))  # 数据库配置
 
 
 class MysqlPool:
-    '''
-    mysql连接池的基类，使用时用子类继承的方法以在不同的子类属性中存储不同的数据库连接池实例
-    :param db: 要使用哪个数据库
-    其他参数需要传输数据库配置信息及连接池配置信息
-    '''
+    """
+    :Summary:
+
+        mysql连接池的基类，使用时用子类继承的方法以在不同的子类属性中存储不同的数据库连接池实例
+    
+    :Args:
+    
+        ``db``: 要使用哪个数据库
+        ``**kw``: 其他参数需要传输数据库配置信息及连接池配置信息
+    """
     # 连接池名字对应连接池实例的字典
     _pool = None
     def __init__(self, db: str, **kw) -> None:
@@ -47,9 +52,9 @@ class MysqlPool:
         return self.cursor.fetchall()
     
     def queryone(self, cmd, param=()):
-        '''
-        调用此方法时命令要增加limit 1条件不然会触发Unread result found异常
-        '''
+        """
+        ※调用此方法时命令要增加limit 1条件不然会触发Unread result found异常
+        """
         self._execute(cmd, param)
         return self.cursor.fetchone()
 
@@ -102,17 +107,17 @@ class MysqlPool:
 
 
 class QbotDB(MysqlPool):
-    '''
+    """
     qbotdb连接池，lable: userinfo, corpus
-    '''
+    """
     def __init__(self,) -> None:
         super().__init__('qbotdb', pool_name='qbotdb', **dbcfg.dict())
 
 
 class GalleryDB(MysqlPool):
-    '''
+    """
     美图图库连接池，lable: gallery
-    '''
+    """
     def __init__(self,) -> None:
         super().__init__('gallery', pool_name='gallery', **dbcfg.dict())
 
