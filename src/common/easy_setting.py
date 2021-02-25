@@ -29,7 +29,9 @@ class EnvSetting(BaseSettings):
 class EasySetting(BaseSettings):
     superusers: Sequence[int]
     nickname: Optional[Sequence[str]]
+    debug: bool
     meitupath: str
+    setupath: str
 
     class Config:
         env_file = Path.cwd()/f".env.{EnvSetting().ENVIRONMENT}"
@@ -40,8 +42,10 @@ easy_setting = EasySetting()
 
 SUPERUSERS = easy_setting.superusers
 BOTNAME = easy_setting.nickname[0]
+DEBUG = easy_setting.debug
 MEITUPATH = easy_setting.meitupath
+SETUPATH = easy_setting.setupath
 
 
 if __name__ == "__main__":
-    print(SUPERUSERS, BOTNAME, MEITUPATH)
+    print(SUPERUSERS, BOTNAME, DEBUG, MEITUPATH, SETUPATH)

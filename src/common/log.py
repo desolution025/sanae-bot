@@ -5,6 +5,7 @@
 
 from pathlib import Path
 from nonebot.log import logger
+from .easy_setting import DEBUG
 
 
 logfolder = Path('./log')
@@ -12,7 +13,8 @@ if not logfolder.exists():
     logfolder.mkdir()
 
 
-logger.add(logfolder/"{time:YYYY-MM-DD}.log", rotation="00:00", retention="1 days", encoding='utf-8')
+level = "DEBUG" if DEBUG else "WARNING"
+logger.add(logfolder/"{time:YYYY-MM-DD}.log", rotation="00:00", retention="1 days", encoding='utf-8', level=level)
 
 
 if __name__ == "__main__":

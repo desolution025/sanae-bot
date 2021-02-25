@@ -6,9 +6,8 @@ from asyncio import gather
 import ujson as json
 import httpx
 from PIL import Image
-from imghdr import what
 from nonebot import on_regex
-from nonebot.rule import Rule
+# from nonebot.rule import Rule
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent
 from nonebot.typing import T_State
@@ -18,20 +17,20 @@ from src.common.rules import sv_sw, comman_rule
 from src.common.log import logger
 from src.utils import imgseg
 from src.utils.antiShielding import handleimage, changPixel, gen_b64
-from src.common.easy_setting import MEITUPATH
+from src.common.easy_setting import MEITUPATH, SETUPATH
 from .lolicon import get_setu, get_1200
 
 
 plugin_name = '色图'
 
 
-BACKUPFP = './res/images/setu'
+# SETUPATH = './res/images/setu'
 # setu = on_keyword(('色图', '涩图'), rule=comman_rule(MessageEvent))
 # seturex = re.compile(r'再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[rR]18)?(?P<kwd>.{0,11}[^的])?的?[色瑟涩][图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?')
 
 
 setu = on_regex(
-    r'^再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?[色瑟涩][图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?$',
+    r'^ *再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?[色瑟涩][图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
     flags=re.I,
     rule=comman_rule(MessageEvent)
     )
@@ -60,11 +59,13 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
         r18 = 1 if r18_call in ('r18', 'R18') else 0      
     else:
         r18 = 2
+    
+    await setu.finish(f'kwd: [{kwd}], r18: {r18}, num: {num}\n_matcged: {state["_matched"]}, _matched_groups: {state["_matched_groups"]}')
             
     try:
         result = await get_setu(kwd, r18, num, True)
-    except Exception as e:
-        logger.error(e)
+    except BaseException as e:
+        logger.exception(e)
         await setu.finish('链接API失败, 若多次失败请反馈给维护组', at_sender=True)
     
     msg = MessageSegment.reply(id_=event.message_id) if event.message_type == 'group' else MessageSegment.text('')
@@ -80,7 +81,7 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
             if imgad:
                 img = imgseg(imgad[0])
             else:
-                imgbkup = [f for f in Path(BACKUPFP).glob(f'{name}.[jp][pn]*g')]
+                imgbkup = [f for f in Path(SETUPATH).glob(f'{name}.[jp][pn]*g')]
                 if imgbkup:
                     img = gen_b64(imgbkup[0])
                 else:
@@ -110,7 +111,8 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
                 imgbuffer = BytesIO(imgs[i].content)
                 with Image.open(imgbuffer) as bf:
                     adimg = changPixel(bf)
-                adimg.save(imgbuffer, format='jpeg', quality=90)
+                    mode = 'png' if adimg == 'RGBA' else 'jpeg'
+                adimg.save(imgbuffer, format=mode, quality=90)
                 im_b64 = "base64://" + base64.b64encode(imgbuffer.getvalue()).decode('utf-8')
 
                 msg += MessageSegment.text(info) + MessageSegment.image(im_b64)
@@ -142,14 +144,14 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
                 json_ls.append(json_data)
             origims = await gather(*backup_ls)
             for i, im in enumerate(origims):
-                imgfp = Path(BACKUPFP)/(str(json_ls[i]['pid']) + '_p' + str(json_ls[i]['p']) + '.' + json_ls[i]['url'].split('.')[-1])
-                jsonfp = Path(BACKUPFP)/(str(json_ls[i]['pid']) + '_p' + str(json_ls[i]['p']) + '.json')
+                imgfp = Path(SETUPATH)/(str(json_ls[i]['pid']) + '_p' + str(json_ls[i]['p']) + '.' + json_ls[i]['url'].split('.')[-1])
+                jsonfp = Path(SETUPATH)/(str(json_ls[i]['pid']) + '_p' + str(json_ls[i]['p']) + '.json')
                 try:
                     with imgfp.open('wb') as f:
                         f.write(im.content)
                     logger.info(f'Downloaded image {imgfp.absolute()}')
-                except Exception as e:
-                    logger.error(e)
+                except BaseException as e:
+                    logger.exception(e)
                 with jsonfp.open('w', encoding='utf-8') as j:
                     json.dump(json_ls[i], j, ensure_ascii=False, escape_forward_slashes=False, indent=4)
                     logger.info(f'Generated json {jsonfp.absolute()}')
