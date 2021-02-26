@@ -161,3 +161,7 @@ cython_debug/
 
 # media resource files
 res/*
+
+# test files
+tmptst*.py
+tmp_tst*.py
