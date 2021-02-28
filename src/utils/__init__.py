@@ -1,7 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Union, Optional, Iterator
-from io import BytesIO
+from typing import Union
 import httpx
 from imghdr import what
 from nonebot.adapters.cqhttp.message import MessageSegment
@@ -21,68 +20,22 @@ async def save_img(url: str, filepath: Union[str, Path]):
     if not isinstance(filepath, Path):
         filepath = Path(filepath)
     filepath.write_bytes(resp.content)
-    if filepath.suffix != what(filepath):
-        filepath.rename(filepath.with_suffix('.' + what(filepath)))
-
-    
-class ImageDownloader:
-    """
-    :Summary:
-
-        网络图片资源下载器，可以并发下载网络图片并处理为BytesIO或本地文件
-
-    :Args:
-
-        ``**kw``: 可传递给client的参数
-
-    """
-    def __init__(self, **kw) -> None:
-        self.client = httpx.AsyncClient(**kw)
-
-    async def _unitrequest(self, url: str, **kw) -> Optional[httpx.Response]:
-        """
-        使用本单个异步请求防止链接超时而中断程序
-        链接失败或请求不成功都会传出None
-        """
-        try:
-            result = await self.client.get(url, **kw)
-            if result.status_code != httpx.codes.OK:
-                result == None
-        except httpx.HTTPError as err:
-            logger.error(f"{err}, when get url: {url}")
-            result = None
-        return result
-
-    
-    async def download(self, *urls, **kw) -> Iterator:
-        """
-        并发下载
-        """
-        tasks = []
-        for url in urls:
-            tasks.append(self._unitrequest(url, **kw))
-        return await asyncio.gather(*tasks)
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, traceback):
-        if exc_type is not None:
-            logger.error(f'{exc_type}: {exc_val}')
-        await self.client.aclose()
-
-
+    real_suffix = f".{what(filepath).replace('jpeg', 'jpg')}"
+    if real_suffix != filepath.suffix.lower():
+        filepath.rename(filepath.with_suffix(real_suffix))
+    return filepath
 
 
 def imgseg(path=Union[str, Path]) -> MessageSegment:
-    """
-    :Summary:
+    """以本地文件图片创建一个可直接发送的MessageSegment
 
-        以本地文件路径生成一个可用的MessageSegment
+        确认不会被和谐的图片使用此方法，否则使用antishieding模块中的Image_Hander来处理
 
-    :Return:
+    Args:
+        path (str, Path): 文件路径. Defaults to Union[str, Path].
 
-        MessageSegment(image类型)
+    Returns:
+        MessageSegment: image类型
     """
     return 'file:///' + str(path)
 

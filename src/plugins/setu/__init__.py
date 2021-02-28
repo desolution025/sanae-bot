@@ -1,6 +1,4 @@
 from pathlib import Path
-from io import BytesIO
-import base64
 import re
 from asyncio import gather
 import ujson as json
@@ -15,9 +13,8 @@ from nonebot.adapters.cqhttp.message import MessageSegment
 from cn2an import cn2an
 from src.common.rules import sv_sw, comman_rule
 from src.common.log import logger
-from src.utils import imgseg
-from src.utils.antiShielding import handleimage, changPixel, gen_b64
-from src.common.easy_setting import MEITUPATH, SETUPATH
+from src.utils.antiShielding import Image_Handler
+from src.common.easy_setting import MEITUPATH, SETUPATH, BOTNAME
 from .lolicon import get_setu, get_1200
 
 
@@ -60,12 +57,18 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
     else:
         r18 = 2
     
-    await setu.finish(f'kwd: [{kwd}], r18: {r18}, num: {num}\n_matcged: {state["_matched"]}, _matched_groups: {state["_matched_groups"]}')
-            
-    try:
-        result = await get_setu(kwd, r18, num, True)
-    except BaseException as e:
-        logger.exception(e)
+    # await setu.finish(f'kwd: [{kwd}], r18: {r18}, num: {num}\n_matcged: {state["_matched"]}, _matched_groups: {state["_matched_groups"]}')
+
+    failed_time = 0
+    while failed_time < 5:
+        try:
+            result = await get_setu(kwd, r18, num, True)
+            break
+        except BaseException as e:
+            failed_time += 1
+            logger.exception(f"connect api faild {failed_time} time(s)\n{e}")
+    else:
+        logger.error(f'多次链接API失败，当前参数: kwd: [{kwd}], num: {num}, r18: {r18}')
         await setu.finish('链接API失败, 若多次失败请反馈给维护组', at_sender=True)
     
     msg = MessageSegment.reply(id_=event.message_id) if event.message_type == 'group' else MessageSegment.text('')
@@ -76,24 +79,20 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
             pid = data['pid']
             p = data['p']
             name = f'{pid}_p{p}'
-            # 查找本地路径，查找顺序依次为 美图反和谐路径->色图备份路径->美图原文件路径，遇到没有本地路径的等待并发下载处理
-            imgad = [f for f in (Path(MEITUPATH)/'antishielding').glob(f'{name} (antishieded).*')]
-            if imgad:
-                img = imgseg(imgad[0])
+            # 按 色图备份路径->美图原文件路径 顺序查找本地图，遇到没有本地路径的等待并发下载处理
+            imgbkup = [f for f in Path(SETUPATH).glob(f'{name}.[jp][pn]*g')]
+            if imgbkup:
+                img = imgbkup[0]
             else:
-                imgbkup = [f for f in Path(SETUPATH).glob(f'{name}.[jp][pn]*g')]
-                if imgbkup:
-                    img = gen_b64(imgbkup[0])
+                imgorg = [f for f in (Path(MEITUPATH)/'origin_info').rglob(f'{name}.[jp][pn]*g')]
+                if imgorg:
+                    img = imgorg[0]
                 else:
-                    imgorg = [f for f in (Path(MEITUPATH)/'origin_info').rglob(f'{name}.[jp][pn]*g')]
-                    if imgorg:
-                        img = imgseg(handleimage(imgorg[0]))
-                    else:
-                        untreated_ls.append(data)
-                        continue
-
-            info = f"{data['title']}\n画师：{data['author']}\nPID：{pid}\n"
-            msg += MessageSegment.text(info) + MessageSegment.image(img)
+                    untreated_ls.append(data)
+                    continue
+            logger.debug(f'当前处理本地图片{name}')
+            info = f"{data['title']}\n画师：{data['author']}\nPID：{name}\n"
+            msg += MessageSegment.text(info) + MessageSegment.image(Image_Handler(img).save2b64())
             if count > 1:
                 msg += MessageSegment.text('\n=====================\n')
                 count -= 1
@@ -105,15 +104,24 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
             task_ls = []
             for imgurl in [d['url'] for d in untreated_ls]:
                 task_ls.append(client.get(get_1200(imgurl), timeout=90))
-            imgs = await gather(*task_ls)
+            imgs = await gather(*task_ls, return_exceptions=True)
+            miss_acount = 0
             for i, data in enumerate(untreated_ls):
-                info = f"{data['title']}\n画师：{data['author']}\nPID：{data['pid']}\n"
-                imgbuffer = BytesIO(imgs[i].content)
-                with Image.open(imgbuffer) as bf:
-                    adimg = changPixel(bf)
-                    mode = 'png' if adimg == 'RGBA' else 'jpeg'
-                adimg.save(imgbuffer, format=mode, quality=90)
-                im_b64 = "base64://" + base64.b64encode(imgbuffer.getvalue()).decode('utf-8')
+                if isinstance(data, BaseException):
+                    miss_acount += 1
+                    logger.exception(data)
+                    continue
+                pid = data['pid']
+                p = data['p']
+                name = f'{pid}_p{p}'
+                info = f"{data['title']}\n画师：{data['author']}\nPID：{name}\n"
+                logger.debug(f'当前处理网络图片{name}')
+                try:
+                    im_b64 = Image_Handler(imgs[i].content).save2b64()
+                except BaseException as err:
+                    logger.exception(f"Error with handle {name}, url: [{data['url']}]\n{err}")
+                    miss_acount += 1
+                    continue
 
                 msg += MessageSegment.text(info) + MessageSegment.image(im_b64)
                 if count > 1:
@@ -121,6 +129,10 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
                     count -= 1
                 elif result['count'] < num:
                     msg += MessageSegment.text(f'\n=====================\n没搜到{num}张，只搜到这些了')
+            if miss_acount > 0 and num > 1:
+                msg += MessageSegment.text(f'\n有{miss_acount}张图丢掉了，{BOTNAME}也不知道丢到哪里去了T_T')
+            elif miss_acount == 1:
+                msg += MessageSegment.text(f'{BOTNAME}拿来了图片但是弄丢了呜呜T_T')
 
         await setu.send(msg)
 
@@ -142,8 +154,11 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
                 }
                 backup_ls.append(bakeuper.get(url, timeout=500))
                 json_ls.append(json_data)
-            origims = await gather(*backup_ls)
+            origims = await gather(*backup_ls, return_exceptions=True)
             for i, im in enumerate(origims):
+                if isinstance(im, BaseException):
+                    logger.exception(im)
+                    continue
                 imgfp = Path(SETUPATH)/(str(json_ls[i]['pid']) + '_p' + str(json_ls[i]['p']) + '.' + json_ls[i]['url'].split('.')[-1])
                 jsonfp = Path(SETUPATH)/(str(json_ls[i]['pid']) + '_p' + str(json_ls[i]['p']) + '.json')
                 try:
@@ -165,5 +180,3 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
         await setu.finish(msg + MessageSegment.text('APIKEY貌似出了问题，请联系维护组检查'))
     else:
         await setu.finish(msg + MessageSegment.text('获取涩图失败，请稍后再试'))
-
-    # TODO: 可能要把并发写成函数并且加入异常捕获
