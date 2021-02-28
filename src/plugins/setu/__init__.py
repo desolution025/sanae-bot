@@ -2,10 +2,10 @@ from pathlib import Path
 import re
 from asyncio import gather
 import ujson as json
+from random import choice
 import httpx
-from PIL import Image
-from nonebot import on_regex
-# from nonebot.rule import Rule
+from nonebot import on_regex, on_keyword
+from nonebot.rule import Rule
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent
 from nonebot.typing import T_State
@@ -13,9 +13,11 @@ from nonebot.adapters.cqhttp.message import MessageSegment
 from cn2an import cn2an
 from src.common.rules import sv_sw, comman_rule
 from src.common.log import logger
+from src.utils import imgseg
 from src.utils.antiShielding import Image_Handler
 from src.common.easy_setting import MEITUPATH, SETUPATH, BOTNAME
 from .lolicon import get_setu, get_1200
+from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 
 
 plugin_name = '色图'
@@ -34,7 +36,7 @@ setu = on_regex(
 
 
 @setu.handle()
-async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
+async def send_lolicon(bot: Bot, event: MessageEvent, state: T_State):
     kwd = state["_matched_dict"]['kwd'] or ''
 
     if state["_matched_dict"]['num']:
@@ -71,7 +73,7 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
         logger.error(f'多次链接API失败，当前参数: kwd: [{kwd}], num: {num}, r18: {r18}')
         await setu.finish('链接API失败, 若多次失败请反馈给维护组', at_sender=True)
     
-    msg = MessageSegment.reply(id_=event.message_id) if event.message_type == 'group' else MessageSegment.text('')
+    msg = MessageSegment.reply(id_=event.message_id) if event.message_type == 'group' else MessageSegment.text('') # 由于当前私聊回复有bug所以只在群里设置信息开始为回复消息
     if result['code'] == 0:
         count = result['count']  # 返回数量，每次处理过后自减1
         untreated_ls = []  # 未处理数据列表，遇到本地库中没有的数据要加入这个列表做并发下载
@@ -180,3 +182,65 @@ async def parse_args(bot: Bot, event: MessageEvent, state: T_State):
         await setu.finish(msg + MessageSegment.text('APIKEY貌似出了问题，请联系维护组检查'))
     else:
         await setu.finish(msg + MessageSegment.text('获取涩图失败，请稍后再试'))
+
+
+#——————————————————————————————————————
+
+type_rex = re.compile(r'来张(?P<method>(?:手机)|(?:pc))?(?P<lx>.+)?壁纸')
+
+async def call_img(bot:Bot, event: MessageEvent, state: T_State):
+    msg = event.raw_message.lower().replace('二次元', 'acg').replace('动漫', 'acg').replace('一张', '来张').replace('电脑', 'pc').replace('妹子', '小姐姐').replace('美女', '小姐姐')
+    state['pc'] = None
+    if '来张小姐姐' in msg:
+        state['img_type'] = 'meizi'
+    elif '来张acg' in msg:
+        state['img_type'] = 'acg'
+    elif '来张写真' in msg:
+        state['img_type'] = 'photo'
+    else:
+        bg_call = type_rex.search(msg)
+        if bg_call:
+            state['img_type'] = 'bg'
+            state['pc'] = bg_call.group('method')
+            state['lx'] = bg_call.group('lx')
+        else:
+            return False
+    return True
+
+
+rand_img = on_keyword({'来张', '一张'}, rule=call_img, priority=2)
+
+@rand_img.handle()
+async def send_others(bot: Bot, event: MessageEvent, state: T_State):
+    msg = MessageSegment.reply(id_=event.message_id) if event.message_type == 'group' else MessageSegment.text('')
+    if state['img_type'] == 'meizi':
+        call = get_nmb(False)
+    elif state['img_type'] == 'photo':
+        call = get_pw(False)
+    elif state['img_type'] == 'bg':
+        if state['lx'] in ('acg', '小姐姐', '风景', '随机'):
+            lx = state['lx'].replace('acg', 'dongman').replace('小姐姐', 'meizi').replace('风景', 'fengjing').replace('随机', 'suiji')
+        elif state['lx'] is not None:
+            msg += MessageSegment.text( f'没有{state["lx"]}类型的壁纸')
+            await rand_img.finish(msg)
+        else:
+            lx = 'suiji'
+        if state['pc'] is not None and state['pc'] == '手机':
+            state['pc'] = 'mobile'
+        call = get_sjbz(state['pc'], lx)
+    elif state['img_type'] == 'acg':
+        call = choice((get_asmdh(), get_nmb(True), get_pw(True)))
+
+    try:
+        result = await call
+    except httpx.HTTPError as e:
+        logger.exception(e)
+        msg += MessageSegment.text('图片丢掉了，要不你再试试？')
+        await rand_img.finish(msg)
+
+    if isinstance(result, str):
+        img = MessageSegment.image(result)
+    else:
+        img = imgseg(result)
+    
+    await rand_img.finish(msg + img)

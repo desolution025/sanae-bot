@@ -1,6 +1,7 @@
 import asyncio
 from pathlib import Path
 from typing import Union
+from base64 import b64encode
 import httpx
 from imghdr import what
 from nonebot.adapters.cqhttp.message import MessageSegment
@@ -26,18 +27,23 @@ async def save_img(url: str, filepath: Union[str, Path]):
     return filepath
 
 
-def imgseg(path=Union[str, Path]) -> MessageSegment:
-    """以本地文件图片创建一个可直接发送的MessageSegment
+def imgseg(src:Union[str, Path, bytes]) -> MessageSegment:
+    """以本地文件图片或二进制数据创建一个可直接发送的MessageSegment
 
         确认不会被和谐的图片使用此方法，否则使用antishieding模块中的Image_Hander来处理
 
     Args:
-        path (str, Path): 文件路径. Defaults to Union[str, Path].
+        path (Union[str, Path, bytes]): 文件路径或二进制文件
 
     Returns:
         MessageSegment: image类型
     """
-    return 'file:///' + str(path)
+
+    if isinstance(src, (str, Path)):
+        filestr = 'file:///' + str(src)
+    else:
+        filestr = 'base64://' + b64encode(src).decode('utf-8')
+    return MessageSegment.image(filestr)
 
 
 if __name__ == "__main__":
