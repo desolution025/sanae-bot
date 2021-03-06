@@ -53,7 +53,7 @@ class MysqlPool:
     
     def queryone(self, cmd, param=()):
         """
-        ※调用此方法时命令要增加limit 1条件不然会触发Unread result found异常
+        ※除非能确定返回值只有一项否则调用此方法时命令要增加limit 1条件不然会触发Unread result found异常
         """
         self._execute(cmd, param)
         return self.cursor.fetchone()
