@@ -104,9 +104,9 @@ async def querylevel(bot: Bot, event: MessageEvent):
     uid = event.user_id
     user = UserLevel(uid)
     if event.message_type == 'group':
-        name = event.sender['card'] or event.sender['nickname']
+        name = event.sender.card or event.sender.nickname
     else:
-        name = event.sender['nickname']
+        name = event.sender.nickname
     msg = ' {name}\n 等级：Lv.{level}\n{pg_bar}\n EXP:{exp}/{max}\n 金币:{fund} \n 最后一次签到：\n {last_sign}'.format(
         name = name,
         level = user.level,

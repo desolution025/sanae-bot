@@ -3,7 +3,10 @@ import configparser
 from pydantic import BaseModel
 # from ipaddress import IPv4Address
 from  mysql.connector import pooling, Error
-from src.common.log import logger
+try:
+    from src.common.log import logger
+except ImportError:
+    from loguru import logger
 
 
 # 数据库配置模型
@@ -16,7 +19,7 @@ class DBConfig(BaseModel):
 
 
 cfg = configparser.ConfigParser()
-cfg.read(Path(__file__).parent/"dbconfig.ini")
+cfg.read(Path(__file__).parent/"dbpool.ini")
 
 dbcfg = DBConfig(**dict(cfg.items("client")))  # 数据库配置
 

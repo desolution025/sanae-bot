@@ -1,6 +1,6 @@
 from datetime import datetime
 from functools import wraps
-from typing import Optional, Callable
+from typing import Callable
 from random import gauss
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent
@@ -9,7 +9,7 @@ try:
     from .log import logger
 except:
     pass
-from utils import reply_header, FreqLimiter, DailyNumberLimiter
+from src.utils import reply_header, FreqLimiter, DailyNumberLimiter
 
 
 def exp_step(level: int) -> int:
@@ -150,6 +150,11 @@ class UserLevel:
 
 
 class FuncLimiter:
+    """集成各种条件的功能限制器
+
+    使用limit_verify方法作为装饰器时按冷却->今日调用量->资金依次判断是否有可以调用功能
+    使用inventory方法作为装饰器时在函数return 'completed'后自动计算冷却、调用量、消耗金币
+    """
 
     def __init__(self,
                 func_name: str,
@@ -161,6 +166,19 @@ class FuncLimiter:
                 max_limit: bool=False,
                 only_group: bool=True
                 ) -> None:
+        """生成限制器实例
+
+        注意不想共同计算的功能要设置不一样的func_name
+
+        Args:
+            func_name (str): 功能名，相同功能名的限制器实例会共用同一个冷却、最大调用量
+            cd_rel (int, optional): 1级冷却，传给cd_step的k，非必须，也可设置恒定冷却. Defaults to 180.
+            max_free (int, optional): 每日最大调用次数，为0则不限制. Defaults to 0.
+            cost (int, optional): 功能花费金额. Defaults to 0.
+            cd_c (bool, optional): 冷却是否为恒定值，否则根据等级计算. Defaults to False.
+            max_limit (bool, optional): 最大调用量限制，默认会在达到最大免费次数后自动消耗金币获得调用权限，为True时则无法使用金币获得额外调用量. Defaults to False.
+            only_group (bool, optional): True则不会在私聊中进行任何限制. Defaults to True.
+        """
         self.func_name, self.cd_rel, self.max_free, self.cost, self.cd_c, self.max_limit, self.only_group\
             = func_name, cd_rel, max_free, cost, cd_c, max_limit, only_group
 
@@ -173,15 +191,10 @@ class FuncLimiter:
         一个根据用户等级与资金判断可否调用功能的函数，用作装饰器
 
         被装饰函数除了bot还必须拥有event参数
-        考虑到调用了函数但未完成完整功能调用的情况，功能调用成功的分支里要手动return 'completed'
+        执行自动计算冷却、消耗金币等操作请使用inventory装饰器
         拒绝语句中剩余资金和剩余冷却可以用format分别传入{left_fund}和{left_time}替换
 
         Args:
-            func_name (str): 当前的命令名字，相同命令命共用相同的限制
-            cd_rela (int, optional): 1级冷却，传给cd_step的k，非必须，也可设置恒定冷却. Defaults to 180.
-            max_free (int, optional): 每日最大调用次数，为0则不限制. Defaults to 0.
-            cost (int, optional): 功能花费金额. Defaults to 0.
-            cd_c (bool, optional): 冷却是否为恒定值，否则根据等级计算. Defaults to False.
             cding (str, optional): 冷却中提醒语句. Defaults to '功能冷却还有{left_time}秒，请稍等一会儿'.
             out_max (str, optional): 超过每日调用次数上限提醒语句. Defaults to '今日本功能调用次数已用尽'.
             overdraft (str, optional): 超额提醒语句. Defaults to '你的资金剩余为{left_fund}金币'.
@@ -196,8 +209,8 @@ class FuncLimiter:
                     uid = event.user_id
 
                     flmt = FreqLimiter(uid, self.func_name)
-                    if not flmt.check(uid):
-                        left_time = flmt.left_time(uid)
+                    if not flmt.check():
+                        left_time = flmt.left_time()
                         msg = cding.format(left_time=round(left_time))
                         await bot.send(event, reply_header(event, msg))
                         return
@@ -207,7 +220,7 @@ class FuncLimiter:
                             await bot.send(event, reply_header(event, '此功能关闭中...'))
                             return
                         nlmt = DailyNumberLimiter(uid, self.func_name, self.max_free)
-                        if not nlmt.check(uid):
+                        if not nlmt.check():
                             await bot.send(event, reply_header(event, out_max))
                             return
                         else:
@@ -227,19 +240,23 @@ class FuncLimiter:
             return wrapper
         return deco
 
-    # 执行完命令获得返回值，如果是'completed'代表完整执行了命令，此时扣除资金并开始冷却
     def inventory(self):
+        """完成命令之后自动扣除金币、计算冷却等操作
+
+        考虑到调用了函数但未完成完整功能调用的情况，功能调用成功的分支里要手动return 'completed'
+        """
         def deco(func: Callable):
             @wraps(func)
             async def wrapper(bot: Bot, event: MessageEvent, *args, **kw):
                 result = await func(bot, event, *args, **kw)
+                # 执行完命令获得返回值，如果是'completed'代表完整执行了命令，此时扣除资金并开始冷却
                 if not (self.only_group is True and event.message_type == 'private') and result == 'completed':
                     uid = event.user_id
                     userinfo = UserLevel(uid)
 
                     if self.max_free:
                         nlmt = DailyNumberLimiter(uid, self.func_name, self.max_free)
-                        if self.cost and not nlmt.check():
+                        if self.cost and not nlmt.check(close_conn=False):
                             userinfo.turnover(-self.cost)
                         nlmt.increase()
 
@@ -247,7 +264,7 @@ class FuncLimiter:
                         userinfo.turnover(-self.cost)
 
                     cd = cd_step(userinfo.level, self.cd_rel) if not self.cd_c else self.cd_rel
-                    FreqLimiter(uid, self.func_name).start_cd(uid, cd)
+                    FreqLimiter(uid, self.func_name).start_cd(cd)
                 
             return wrapper
         return deco
