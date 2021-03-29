@@ -16,6 +16,7 @@ from src.common.log import logger
 from src.utils import imgseg
 from src.utils.antiShielding import Image_Handler
 from src.common.easy_setting import MEITUPATH, SETUPATH, BOTNAME
+from src.common.levelsystem import UserLevel
 from .lolicon import get_setu, get_1200
 from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 
@@ -31,7 +32,7 @@ plugin_name = '色图'
 setu = on_regex(
     r'^ *再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?[色瑟涩][图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
     flags=re.I,
-    rule=comman_rule(MessageEvent)
+    rule=sv_sw('色图') & comman_rule(MessageEvent)
     )
 
 
@@ -189,6 +190,8 @@ async def send_lolicon(bot: Bot, event: MessageEvent, state: T_State):
 type_rex = re.compile(r'来张(?P<method>(?:手机)|(?:pc))?(?P<lx>.+)?壁纸')
 
 async def call_img(bot:Bot, event: MessageEvent, state: T_State):
+    """调用一些杂项图片API的规则"""
+
     msg = event.raw_message.lower().replace('二次元', 'acg').replace('动漫', 'acg').replace('一张', '来张').replace('电脑', 'pc').replace('妹子', '小姐姐').replace('美女', '小姐姐')
     state['pc'] = None
     if '来张小姐姐' in msg:
@@ -208,7 +211,7 @@ async def call_img(bot:Bot, event: MessageEvent, state: T_State):
     return True
 
 
-rand_img = on_keyword({'来张', '一张'}, rule=call_img, priority=2)
+rand_img = on_keyword({'来张', '一张'}, rule=sv_sw('杂图') & call_img, priority=2)
 
 @rand_img.handle()
 async def send_others(bot: Bot, event: MessageEvent, state: T_State):

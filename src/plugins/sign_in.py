@@ -84,7 +84,7 @@ async def sign_(bot: Bot, event: MessageEvent):
 
     if today > last_sign_day:
         with QbotDB() as botdb:
-            botdb.update('update userinfo set `last_sign`=NOW() total_sign=total_sign+1 where qq_number=%s;', (uid,))
+            botdb.update('update userinfo set `last_sign`=NOW(), total_sign=total_sign+1 where qq_number=%s;', (uid,))
         
         gndexp = cgauss(8, 2, 0)
         gndfund = cgauss(25, 3, 0)

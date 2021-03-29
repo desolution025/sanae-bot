@@ -40,7 +40,7 @@ with swfile.open(encoding='utf-8') as j:
     
 func_ls = []  # 存储所有功能名字的列表，建立功能开关时自动存入，用来查询是否是真实存在的功能
 
-def sv_sw(name: str) -> Callable:
+def sv_sw(name: str) -> Rule:
     """
     :Summary:
         

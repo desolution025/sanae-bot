@@ -100,9 +100,9 @@ class UserLevel:
         gndfund = self.level * 10 + 10
         self.fund += gndfund
         if event.message_type == 'group':
-            name = event.sender['card'] or event.sender['nickname'] or event.get_user_id()
+            name = event.sender.card or event.sender.nickname or event.get_user_id()
         else:
-            name = event.sender['nickname'] or event.get_user_id()
+            name = event.sender.nickname or event.get_user_id()
         botdb.update('update userinfo set level=%s, exp=%s, fund=%s where qq_number=%s', (self.level, self.exp, self.fund, self.uid,))
 
         await bot.send(event, message=f'{name}升级到lv{self.level}了！获得{gndfund}金币~', at_sender=True)
