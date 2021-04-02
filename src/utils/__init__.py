@@ -26,6 +26,7 @@ def reply_header(event: MessageEvent, text: Optional[Union[str, MessageSegment]]
     Returns:
         MessageSegment: 连接后的消息段
     """
+    logger.debug(event)
     msg = MessageSegment.reply(event.message_id) if event.message_type == 'group' else MessageSegment.text('')
     if text is not None:
         if isinstance(text, str):
@@ -133,9 +134,11 @@ class DailyNumberLimiter:
 
         # 如果没有func_name列增加三个相关列
         if func_name not in self.__class__.func_name_ls:
+            logger.debug(f'A new func {func_name} will be add in table calltimes')
             self.__class__.func_name_ls.append(func_name)
             self.conn.update(f"ALTER TABLE calltimes  ADD {func_name}_day DATE, ADD {func_name}_count INT DEFAULT 0, ADD {func_name}_total INT DEFAULT 0;")
             self.conn.update(f"UPDATE calltimes SET {func_name}_day = CURDATE();")
+            logger.info(f'Add func_name: {func_name} to table calltimes')
 
         result = self.conn.queryone(
             f'select {func_name}_day, {func_name}_count, {func_name}_total from calltimes where qq_number=%s;',
@@ -168,7 +171,7 @@ class DailyNumberLimiter:
         """
         if self.last_call < date.today():
             self.count = 0
-            self.conn.update(f'UPDATE calltimes SET {self.func_name}_count=0, {self.func_name}_day=CRUDATE() WHERE qq_number=%s', (self.uid,))
+            self.conn.update(f'UPDATE calltimes SET {self.func_name}_count=0, {self.func_name}_day=CURDATE() WHERE qq_number=%s', (self.uid,))
 
         if not self.conn.q:
             self.conn.commit()

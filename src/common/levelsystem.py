@@ -1,9 +1,10 @@
 from datetime import datetime
 from functools import wraps
 from typing import Callable
-from random import gauss
+from inspect import signature
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent
+from nonebot.typing import T_State
 try:
     from .dbpool import QbotDB
     from .log import logger
@@ -154,6 +155,11 @@ class FuncLimiter:
 
     使用limit_verify方法作为装饰器时按冷却->今日调用量->资金依次判断是否有可以调用功能
     使用inventory方法作为装饰器时在函数return 'completed'后自动计算冷却、调用量、消耗金币
+    作用于同一handler时需按照
+    @[Matcher.method()]
+    @inventory()
+    @limit_verify()
+    的顺序进行装饰
     """
 
     def __init__(self,
@@ -202,9 +208,9 @@ class FuncLimiter:
         """
         def deco(func: Callable):
             @wraps(func)
-            async def wrapper(bot: Bot, event: MessageEvent, *args, **kw):
-
+            async def wrapper(bot: Bot, event: MessageEvent, state: T_State):
                 # 只在群内检测，检测顺序为频率>每日限制>资金
+                logger.debug('开始检测')
                 if not (self.only_group is True and event.message_type == 'private'):
                     uid = event.user_id
 
@@ -223,8 +229,6 @@ class FuncLimiter:
                         if not nlmt.check():
                             await bot.send(event, reply_header(event, out_max))
                             return
-                        else:
-                            self.daily_pass = True
 
                     if self.cost:
                         userinfo = UserLevel(uid)
@@ -232,36 +236,51 @@ class FuncLimiter:
                             refuse_msg = overdraft.format(left_fund = userinfo.fund)
                             if userinfo.level == 0:
                                 refuse_msg += '，先[签到]领取资金吧'
-                            await bot.send(event, reply_header(refuse_msg))
+                            await bot.send(event, reply_header(event, refuse_msg))
                             return
 
-                return await func(bot, event, *args, **kw)
+                # 解析handler参数并在调用时赋予真实参数
+                params = signature(func)
+                _bot = params.parameters.get('bot')
+                _event = params.parameters.get('event')
+                _state = params.parameters.get('state')
+                args = []
+                for i, param in enumerate([_bot, _event, _state]):
+                    if param:
+                        args.append([bot, event, state][i])
+
+                return await func(*args)
 
             return wrapper
         return deco
 
-    def inventory(self):
+    def inventory(self, branch='completed'):
         """完成命令之后自动扣除金币、计算冷却等操作
 
         考虑到调用了函数但未完成完整功能调用的情况，功能调用成功的分支里要手动return 'completed'
+
+        Args:
+            branch (str, optional): 完整执行了命令的分支返回的标识字符串(其实不用字符串也行). Defaults to 'completed'.
         """
+
         def deco(func: Callable):
             @wraps(func)
-            async def wrapper(bot: Bot, event: MessageEvent, *args, **kw):
-                result = await func(bot, event, *args, **kw)
+            async def wrapper(bot:Bot, event: MessageEvent, state: T_State):
+                result = await func(bot, event, state)
+                logger.debug(f'{func.__name__}返回结果: {result}')
                 # 执行完命令获得返回值，如果是'completed'代表完整执行了命令，此时扣除资金并开始冷却
-                if not (self.only_group is True and event.message_type == 'private') and result == 'completed':
+                if not (self.only_group is True and event.message_type == 'private') and result == branch:
+                    logger.debug(f'{func.__name__}完整执行，进行结算')
                     uid = event.user_id
                     userinfo = UserLevel(uid)
 
+                    nlmt = DailyNumberLimiter(uid, self.func_name, self.max_free)
                     if self.max_free:
-                        nlmt = DailyNumberLimiter(uid, self.func_name, self.max_free)
                         if self.cost and not nlmt.check(close_conn=False):
                             userinfo.turnover(-self.cost)
-                        nlmt.increase()
-
                     elif self.cost:
                         userinfo.turnover(-self.cost)
+                    nlmt.increase()
 
                     cd = cd_step(userinfo.level, self.cd_rel) if not self.cd_c else self.cd_rel
                     FreqLimiter(uid, self.func_name).start_cd(cd)

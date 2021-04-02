@@ -63,7 +63,7 @@ async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) ->
             'size1200': size1200
             }
     async with httpx.AsyncClient() as client:
-        resp = await client.get(API, params=params, timeout=30)
+        resp = await client.get(API, params=params, timeout=120)
     return resp.json()
 
 

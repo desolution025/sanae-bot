@@ -1,6 +1,6 @@
 from typing import Optional
 from random import choice
-from httpx import AsyncClient
+from httpx import AsyncClient, codes
 
 
 # 来自 https://img.asmdh.com/
@@ -17,6 +17,8 @@ async def get_asmdh():
     """
     async with AsyncClient() as client:
         resp = await client.get(ASMDH_API, timeout=120)
+    if resp.status_code != codes.OK:
+        return resp.status_code
     return str(resp.url)
 
 
@@ -44,6 +46,8 @@ async def get_sjbz(method: Optional[str]=None, lx: str='suiji') -> bytes:
             'lx': lx
         }
         resp = await client.get(SJBZ_API, params=params)
+    if resp.status_code != codes.OK:
+        return resp.status_code
     return resp.content
 
 
@@ -69,6 +73,8 @@ async def get_nmb(acg: bool) -> bytes:
 
     async with AsyncClient(verify=False) as client:  # 要禁用证书检查不然会爆ssl证书错误
         resp = await client.get(api, timeout=90)
+    if resp.status_code != codes.OK:
+        return resp.status_code
     return resp.content
 
 
@@ -93,6 +99,8 @@ async def get_pw(acg: bool) -> str:
     param = {'return': 'json'}
     async with AsyncClient() as client:
         resp = await client.get(api, params=param, timeout=90)
+    if resp.status_code != codes.OK:
+        return resp.status_code
     return resp.json()['imgurl']
 
 

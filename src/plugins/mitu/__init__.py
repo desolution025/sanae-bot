@@ -1,10 +1,6 @@
 import re
-import ujson as json
-from pathlib import Path
-from collections import defaultdict
 from math import ceil
-from nonebot import on_command, on_regex
-from nonebot.rule import Rule
+from nonebot import on_regex, MatcherGroup
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import GroupMessageEvent
 from nonebot.typing import T_State
@@ -13,6 +9,7 @@ from cn2an import cn2an
 from src.common.rules import sv_sw, comman_rule
 from src.utils import reply_header, FreqLimiter, DailyNumberLimiter
 from src.utils.antiShielding import Image_Handler
+from src.common import sl_settings, save_sl
 from src.common.easy_setting import BOTNAME, SUPERUSERS
 from src.common.levelsystem import UserLevel, cd_step
 from src.common.log import logger
@@ -24,19 +21,33 @@ plugin_name = '美图'
 
 #——————————————————设置sl——————————————————
 
-sl_setting_file = Path(__file__).parent/'group_sl_set.json'
-if not sl_setting_file.exists():
-    with sl_setting_file.open('w', encoding='utf-8') as initj:
-        json.dump({}, initj, indent=4)
-with sl_setting_file.open(encoding='utf-8') as j:
-    sl_settings = defaultdict(dict, json.load(j))
+
+lock_map = {
+    'member': 0,
+    'admin': 1,
+    'owner': 2
+    }  # 把群权限转成int方便比较
 
 
-set_sl = on_command('设置sl', aliases={'设置SL', '设置Sl'}, rule=comman_rule(GroupMessageEvent))
+lock_inv_map = {
+    0: '群员',
+    1: '管理员',
+    2: '群主'
+    }  # 还要映射回来，好蠢，淦
+
+
+sl = MatcherGroup(rule=comman_rule(GroupMessageEvent))
+
+
+set_sl = sl.on_command('设置sl', aliases={'设置SL', '设置Sl'})
 
 
 @set_sl.handle()
 async def first_receive(bot: Bot, event: GroupMessageEvent, state: T_State):
+    gid = str(event.group_id)
+    locked = sl_settings[gid]['locked'] if gid in sl_settings else lock_map[event.sender.role]
+    if locked > lock_map[event.sender.role]:
+        await set_sl.finish(reply_header(event, f'sl被{lock_inv_map[locked]}锁定，低于此权限不可设置sl，或先以高级权限[解锁sl]重置锁定权限'))
     args = event.get_plaintext().strip()
     if args:
         state['input'] = args
@@ -68,16 +79,76 @@ async def parse_sl(bot: Bot, event: GroupMessageEvent, state: T_State):
         else:
             await set_sl.finish(reply_header(event, '，你怎么总是出错，这智商快告别手表吧'))
 
-    sl_settings[str(event.group_id)]['min_sl'] = min_sl
-    sl_settings[str(event.group_id)]['max_sl'] = max_sl
+    gid = str(event.group_id)
+    sl_settings[gid]['min_sl'] = min_sl
+    sl_settings[gid]['max_sl'] = max_sl
+    sl_settings[gid]['locked'] = lock_map[event.sender.role]
 
-    try:
-        with sl_setting_file.open('w', encoding='utf-8') as j:
-            json.dump(sl_settings, j, ensure_ascii=False, indent=4)
-        await set_sl.finish(f'已设置本群sl为{min_sl}-{max_sl}')  # TODO：设置sl评级
-    except IOError as ioerr:
-        logger.error(ioerr)
+    if save_sl():
+        await set_sl.finish(f'已设置本群sl为[{min_sl}-{max_sl}]')  # TODO：设置sl评级
+    else:
         await set_sl.finish('设置sl功能故障，请联系维护组紧急修复！')
+
+
+lock_sl = sl.on_command('锁定sl', aliases={'锁定SL', '锁定Sl'})
+
+
+@lock_sl.handle()
+async def lock_sl_(bot: Bot, event: GroupMessageEvent):
+    gid = str(event.group_id)
+    if gid not in sl_settings:
+        await lock_sl.finish('本群未设置sl')
+    if event.sender.role not in ('owner', 'admin'):
+        await lock_sl.finish('仅管理权限可锁定sl')
+    min_sl = sl_settings[gid]['min_sl']
+    max_sl = sl_settings[gid]['max_sl']
+    locked = sl_settings[gid]['locked']
+    if locked:
+        await lock_sl.finish(f'已经锁了，现在sl区间是[{min_sl}-{max_sl}]')
+    else:
+        sl_settings[gid]['locked'] = lock_map[event.sender.role]
+        if save_sl():
+            await set_sl.finish(f'已锁定本群sl为[{min_sl}-{max_sl}]，管理员使用[解锁sl]功能可解除锁定')
+        else:
+            await set_sl.finish('sl功能故障，请联系维护组紧急修复！')
+
+
+unlock_sl = sl.on_command('解锁sl', aliases={'解锁SL', '解锁Sl'})
+
+
+@unlock_sl.handle()
+async def unlock_sl_(bot: Bot, event: GroupMessageEvent):
+    gid = str(event.group_id)
+    if gid not in sl_settings:
+        await lock_sl.finish('本群未设置sl')
+    locked = sl_settings[gid]['locked']
+    if not locked:
+        await lock_sl.finish('本群sl未锁定')
+    if locked > lock_map[event.sender.role]:
+        await lock_sl.finish(reply_header(event, f'sl被{lock_inv_map[locked]}锁定，低于此权限不可解锁sl'))
+    sl_settings[gid]['locked'] = 0
+    if save_sl():
+        await set_sl.finish('已解锁sl，当前sl区间可由群员设置')
+    else:
+        await set_sl.finish('sl功能故障，请联系维护组紧急修复！')
+
+
+# 查询当前群sl区间
+query_sl = sl.on_command('查询sl', aliases={'查询SL', '查询Sl', '本群sl', '本群SL', '本群Sl'})
+
+
+@query_sl.handle()
+async def report_sl(bot: Bot, event: GroupMessageEvent):
+    gid = str(event.group_id)
+    min_sl = sl_settings[gid]['min_sl']
+    max_sl = sl_settings[gid]['max_sl']
+    locked = sl_settings[gid]['locked']
+    msg = f'本群sl区间为:[{min_sl}-{max_sl}]\n'
+    if not locked:
+        msg += '未锁定'
+    else:
+        msg += f'被{lock_inv_map[locked]}锁定'
+    await query_sl.finish(reply_header(event, msg))
 
 #——————————————————————————————————————————————————
 
@@ -85,11 +156,12 @@ async def parse_sl(bot: Bot, event: GroupMessageEvent, state: T_State):
 mitu = on_regex(
     r'^ *再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?美[图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
     flags=re.I,
-    rule=sv_sw('美图') & comman_rule(GroupMessageEvent)
+    rule=sv_sw('美图') & comman_rule(GroupMessageEvent),
+    priority=2
     )
 
 
-kwdrex = re.compile(r'[,，]')
+kwdrex = re.compile(r'[,，]')  # 分离逗号做交集搜索
 
 
 @mitu.handle()
@@ -209,7 +281,10 @@ sl说明：
     cd = cd_step(userinfo.level, 150)
     flmt.start_cd(cd)  # 开始冷却
 
-    if not in_free:
-        cost = (len(result) - miss_count) * 3 + 2  # 返回数量可能少于调用量，并且要减去miss的数量
-        userinfo.turnover(-cost)  # 如果超过每天三次的免费次数则扣除相应资金
-    dlmt.increase()  # 调用量加一
+    if miss_count < len(result):
+        if not in_free:
+            cost = (len(result) - miss_count) * 3 + 2  # 返回数量可能少于调用量，并且要减去miss的数量
+            userinfo.turnover(-cost)  # 如果超过每天三次的免费次数则扣除相应资金
+        dlmt.increase()  # 调用量加一
+    else:
+        dlmt.conn.close()

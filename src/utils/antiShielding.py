@@ -96,5 +96,5 @@ class Image_Handler:
 
 
 if __name__ == "__main__":
-    fp = "E:\Temp\check\pillow-logo.png"
-    Image_Handler(fp).save2file("E:\Temp\check\dnmd.ppp")
+    fp = "https://i.pixiv.cat/img-original/img/2021/02/01/19/00/00/87461567_p0.jpg"
+    Image_Handler(fp).save2file("E:\Temp\check\87461567.ppp")
