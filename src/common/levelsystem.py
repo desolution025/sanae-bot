@@ -210,7 +210,7 @@ class FuncLimiter:
             @wraps(func)
             async def wrapper(bot: Bot, event: MessageEvent, state: T_State):
                 # 只在群内检测，检测顺序为频率>每日限制>资金
-                logger.debug('开始检测')
+                # logger.debug('开始检测')
                 if not (self.only_group is True and event.message_type == 'private'):
                     uid = event.user_id
 

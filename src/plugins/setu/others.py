@@ -4,7 +4,8 @@ from httpx import AsyncClient, codes
 
 
 # 来自 https://img.asmdh.com/
-ASMDH_API = "https://img.asmdh.com/img.php"
+ASMDH_API_ACG1 = "http://img.asmdh.com/man/api.php"
+ASMDH_API_ACG2 = "http://img.asmdh.com/hua/api.php"
 
 
 async def get_asmdh():
@@ -16,7 +17,7 @@ async def get_asmdh():
         str: 图片url
     """
     async with AsyncClient() as client:
-        resp = await client.get(ASMDH_API, timeout=120)
+        resp = await client.get(choice([ASMDH_API_ACG1, ASMDH_API_ACG2]), timeout=120)
     if resp.status_code != codes.OK:
         return resp.status_code
     return str(resp.url)

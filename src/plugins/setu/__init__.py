@@ -27,11 +27,6 @@ from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 plugin_name = '色图'
 
 
-# SETUPATH = './res/images/setu'
-# setu = on_keyword(('色图', '涩图'), rule=comman_rule(MessageEvent))
-# seturex = re.compile(r'再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[rR]18)?(?P<kwd>.{0,11}[^的])?的?[色瑟涩][图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?')
-
-
 setu = on_regex(
     r'^ *再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?[色瑟涩][图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
     flags=re.I,
