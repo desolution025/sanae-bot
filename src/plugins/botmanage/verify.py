@@ -1,7 +1,7 @@
 from pathlib import Path
 import ujson as json
 from datetime import datetime, timedelta
-
+# TODO: 防止好友拉入别的群，限制黑名单改为只响应白名单
 
 block_groups_file = Path(__file__).parent/"block_groups.json"
 block_users_file = Path(__file__).parent/"block_users.json"
