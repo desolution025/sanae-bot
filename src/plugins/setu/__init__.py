@@ -178,13 +178,13 @@ sl说明：
             imgs = await gather(*task_ls, return_exceptions=True)
             
             for i, data in enumerate(untreated_ls):
-                if imgs[i].status_code != httpx.codes.OK:
-                    miss_count += 1
-                    logger.error(f'Got unsuccessful status_code [{imgs[i].status_code}] when visit url: {imgs[i].url}')
-                    continue
                 if isinstance(imgs[i], BaseException):
                     miss_count += 1
                     logger.exception(data)
+                    continue
+                if imgs[i].status_code != httpx.codes.OK:
+                    miss_count += 1
+                    logger.error(f'Got unsuccessful status_code [{imgs[i].status_code}] when visit url: {imgs[i].url}')
                     continue
                 pid = data['pid']
                 p = data['p']
