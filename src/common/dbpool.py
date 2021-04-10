@@ -129,6 +129,6 @@ if __name__ == "__main__":
     # print(dbcfg.json())
     # print(dbcfg.dict())
     with QbotDB() as qb:
-        result = qb.queryone('select * from userinfo limit 1')
+        result = qb.queryall('select * from corpus where ID>2000')
         # result = qb.queryone('select * from userinfo limit 2')
         print(result)

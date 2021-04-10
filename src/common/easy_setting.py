@@ -10,6 +10,9 @@ BOTNAME: str
 from pathlib import Path
 from pydantic import BaseSettings, validator
 from typing import Optional, Sequence
+from nonebot.adapters.cqhttp.bot import Bot
+from nonebot.adapters.cqhttp.event import MessageEvent, GroupMessageEvent
+from nonebot.typing import T_State
 
 
 class EnvSetting(BaseSettings):

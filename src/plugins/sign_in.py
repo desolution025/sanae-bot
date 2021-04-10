@@ -2,8 +2,7 @@ from typing import Optional
 from random import gauss
 from datetime import datetime, date
 from nonebot import on_command, MatcherGroup
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import MessageEvent
+from src.common import Bot, MessageEvent
 from src.utils import reply_header
 from src.common.levelsystem import UserLevel, exp_step
 from src.common.dbpool import QbotDB
