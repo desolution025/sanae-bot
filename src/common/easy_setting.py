@@ -11,7 +11,7 @@ from pathlib import Path
 from pydantic import BaseSettings, validator
 from typing import Optional, Sequence
 from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import MessageEvent, GroupMessageEvent
+from nonebot.adapters.cqhttp.event import MessageEvent, GroupMessageEvent, PrivateMessageEvent
 from nonebot.typing import T_State
 
 
@@ -33,6 +33,7 @@ class EasySetting(BaseSettings):
     superusers: Sequence[int]
     nickname: Optional[Sequence[str]]
     debug: bool
+    cancel_expression: Sequence[str]
     meitupath: str
     setupath: str
 
@@ -46,6 +47,7 @@ easy_setting = EasySetting()
 SUPERUSERS = easy_setting.superusers
 BOTNAME = easy_setting.nickname[0]
 DEBUG = easy_setting.debug
+CANCEL_EXPRESSION = easy_setting.cancel_expression
 MEITUPATH = easy_setting.meitupath
 SETUPATH = easy_setting.setupath
 

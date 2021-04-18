@@ -1,33 +1,10 @@
 from typing import Optional
-from random import gauss
 from datetime import datetime, date
-from nonebot import on_command, MatcherGroup
+from nonebot import MatcherGroup
 from src.common import Bot, MessageEvent
-from src.utils import reply_header
+from src.utils import reply_header, cgauss
 from src.common.levelsystem import UserLevel, exp_step
 from src.common.dbpool import QbotDB
-
-
-# 用来计算签到功能给的经验和资金
-def cgauss(mu: float, sigma: float, min_: Optional[int]=None, max_: Optional[int]=None) -> int:
-    """一个带有钳制功能的高斯分布，并把输出变为int
-
-    Args:
-        mu ([type]): μ，高斯分布的中心
-        sigma ([type]): σ，衰减
-        min_ ([type], optional): 钳制最小值. Defaults to None.
-        max_ ([type], optional): 钳制最大值. Defaults to None.
-
-    Returns:
-        [type]: [description]
-    """
-    num = round(gauss(mu, sigma))
-    if min_ != None:
-        num = num if num > min_ else min_
-    if max_ != None:
-        num = num if num < max_ else max_
-    return num
-
 
 
 # 一个进度条用来显示经验值进度
