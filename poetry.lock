@@ -252,6 +252,14 @@ python-versions = ">=3.6"
 full = ["aiofiles", "graphene", "itsdangerous", "jinja2", "python-multipart", "pyyaml", "requests", "ujson"]
 
 [[package]]
+name = "tencentcloud-sdk-python"
+version = "3.0.379"
+description = "Tencent Cloud SDK for Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "typing-extensions"
 version = "3.7.4.3"
 description = "Backported and Experimental Type Hints for Python 3.5+"
@@ -320,7 +328,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "77a9c080cdda461f9637c3814814a617ad46a3d624dd78caa7fbc5fb93d8133b"
+content-hash = "d6fd83678f57f5987010e7fc202381739f568201717e193b538698f0ea03be53"
 
 [metadata.files]
 certifi = [
@@ -488,6 +496,10 @@ sniffio = [
 starlette = [
     {file = "starlette-0.13.6-py3-none-any.whl", hash = "sha256:bd2ffe5e37fb75d014728511f8e68ebf2c80b0fa3d04ca1479f4dc752ae31ac9"},
     {file = "starlette-0.13.6.tar.gz", hash = "sha256:ebe8ee08d9be96a3c9f31b2cb2a24dbdf845247b745664bd8a3f9bd0c977fdbc"},
+]
+tencentcloud-sdk-python = [
+    {file = "tencentcloud-sdk-python-3.0.379.tar.gz", hash = "sha256:f0673f42534a19480bc4cf7f1cb3c8d2978aaf4556eefa4652a7e35aab53b64e"},
+    {file = "tencentcloud_sdk_python-3.0.379-py2.py3-none-any.whl", hash = "sha256:9471bf69853cb388e36f4ce7cfca6b6eab2e2e017fa7a773362c677d0e782811"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.7.4.3-py2-none-any.whl", hash = "sha256:dafc7639cde7f1b6e1acc0f457842a83e722ccca8eef5270af2d74792619a89f"},

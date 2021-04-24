@@ -12,6 +12,7 @@ from pydantic import BaseSettings, validator
 from typing import Optional, Sequence
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent, GroupMessageEvent, PrivateMessageEvent
+from nonebot.adapters.cqhttp.message import Message, MessageSegment
 from nonebot.typing import T_State
 
 
