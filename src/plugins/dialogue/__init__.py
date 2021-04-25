@@ -8,12 +8,12 @@ from random import choice, randint
 from emoji import emojize, demojize
 from nonebot import MatcherGroup
 from nonebot.message import handle_event
-from src.common import Bot, MessageEvent, GroupMessageEvent, PrivateMessageEvent, Message, MessageSegment, T_State, CANCEL_EXPRESSION
+from src.common import Bot, MessageEvent, GroupMessageEvent, PrivateMessageEvent, Message, MessageSegment, T_State, CANCEL_EXPRESSION, SUPERUSERS
 from src.common.rules import sv_sw
 from src.common.log import logger
 from src.common.levelsystem import UserLevel
 from src.utils import reply_header, cgauss, PagingBar
-from .corpus import query, query_exists, plus_one, insertone, insertmany, update_prob
+from .corpus import query, query_exists, plus_one, insertone, insertmany, update_prob, del_record
 
 
 plugin_name = '问答对话'
@@ -579,7 +579,7 @@ async def get_sid(bot: Bot, event: MessageEvent, state: T_State):
     if result := query_exists(sid, q=True):
         creator, source, public = result
         gid = event.group_id if event.message_type == 'group' else 0
-        if not public and source != gid and creator != event.user_id:  # 查询地点无法触发的非公开对话且不为查询者创建，不能修改
+        if not public and source != gid and creator != event.user_id and event.user_id not in SUPERUSERS:  # 查询地点无法触发的非公开对话且不为查询者创建，不能修改
             await modify.finish(reply_header(event, '此对话为他人创建非公开对话，您没有权限更改此对话出现率'))
     else:
         await modify.finish(reply_header(event, f'ID {sid} 的对话不存在，请检查查询内容'))
@@ -592,6 +592,37 @@ async def get_probability(bot: Bot, event: MessageEvent, state: T_State):
         await modify.finish(reply_header(event, '出现率仅接收0-100范围内的数字参数'))
     update_prob(state["sid"], prob)
     await modify.finish(f'已将id为{state["sid"]}的对话相对出现率修改为{prob}%')
+
+
+del_record = qanda.on_command('删除对话', priority=2)  # 普通用户并不会删除对话，而是调用修改分辨率对话然后将对话出现率设置为0
+
+
+@del_record.handle()
+async def fake_del_recieve(bot: Bot, event: MessageEvent, state: T_State):
+    arg = event.message.extract_plain_text().strip()
+    if arg:
+        state["sid"] = arg  # 不需要转换int，参数统一放入message发送修改出现率命令
+
+
+@del_record.got("sid", '请输入要删除的ID，输入[取消]结束本次对话')
+async def fake_del_handle(bot: Bot, event: MessageEvent, state: T_State):
+    # 退出指令
+    if str(event.message) in CANCEL_EXPRESSION:
+        await learn.finish('已退出当前对话')
+    sid = state["sid"] if "sid" in state else event.message.extract_plain_text().strip()
+    if event.user_id in SUPERUSERS:  # 真实的删除
+        try:
+            sid = int(sid)
+        except ValueError:
+            await del_record.finish(reply_header(event, '非数字参数'))
+        exsit = query_exists(sid)
+        if not exsit:
+            await del_record.finish(reply_header(event, '不存在的对话'))
+        del_record(sid)
+        await del_record.finish(reply_header(event, f'已删除对话{sid}'))
+    else:  # 虚假的删除
+        event.message = Message(f'修改分辨率 -{sid} -0')
+        await handle_event(bot, event)
 
 
 # TODO: 查询自己设置过的，举报
