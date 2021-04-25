@@ -2,15 +2,14 @@ from datetime import datetime
 from functools import wraps
 from typing import Callable
 from inspect import signature
+
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent
 from nonebot.typing import T_State
-try:
-    from .dbpool import QbotDB
-    from .log import logger
-except:
-    pass
+
 from src.utils import reply_header, FreqLimiter, DailyNumberLimiter
+from .dbpool import QbotDB
+from .log import logger
 
 
 def exp_step(level: int) -> int:

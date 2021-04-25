@@ -4,15 +4,17 @@ from asyncio import gather
 import ujson as json
 from math import ceil
 from random import choice
+
 import httpx
 from PIL import UnidentifiedImageError
+from cn2an import cn2an
 from nonebot import on_regex, on_keyword
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent
 from nonebot.typing import T_State
 from nonebot.adapters.cqhttp.message import MessageSegment
 from nonebot.adapters.cqhttp.exception import NetworkError, CQHTTPAdapterException
-from cn2an import cn2an
+
 from src.common import sl_settings
 from src.common.rules import sv_sw, comman_rule
 from src.common.log import logger

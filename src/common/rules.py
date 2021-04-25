@@ -1,9 +1,6 @@
 """
-定义可能会复用的通用规则，暂时包括：
-分群功能开关规则
-登录号被踢规则
-群成员增加规则(剔除登录号加群)
-群成员减少规则(剔除登录号被踢)
+定义可能会复用的通用规则：
+分群功能开关规则sv_sw
 其他无特殊过滤的通用规则可使用common_rule
 """
 
@@ -12,6 +9,7 @@ from pathlib import Path
 import ujson as json
 from typing import Callable, Iterable
 from functools import reduce
+
 from nonebot.rule import Rule
 from nonebot.typing import T_State
 from nonebot.adapters.cqhttp.bot import Bot

@@ -3,6 +3,7 @@ from nonebot.rule import to_me
 from nonebot.adapters.cqhttp.permission import GROUP
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import Event
+
 from src.plugins.botmanage.verify import Group_Blocker
 from src.common.easy_setting import BOTNAME, SUPERUSERS
 

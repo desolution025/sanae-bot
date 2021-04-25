@@ -3,6 +3,7 @@ from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import LifecycleMetaEvent, GroupDecreaseNoticeEvent
 from nonebot.typing import T_State
 from nonebot import get_loaded_plugins
+
 from src.common.easy_setting import SUPERUSERS
 from src.common.rules import comman_rule
 from src.common.log import logger
@@ -18,7 +19,7 @@ online = on_metaevent(rule=comman_rule(LifecycleMetaEvent, sub_type="connect"))
 async def online_remind(bot: Bot):
     plugins = get_loaded_plugins()
     msg = 'online desu\n当前加载的插件：\n' + '\n'.join(map(lambda x: x.module.plugin_name, filter(lambda obj: hasattr(obj.module, 'plugin_name'), plugins)))
-
+    # TODO: 只有维护组可见的插件帮助变量在前面加_
     for sps in SUPERUSERS:
         await bot.send_private_msg(user_id=sps, message=msg)
 

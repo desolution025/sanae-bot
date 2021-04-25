@@ -1,6 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 import ujson as json
+
 from .log import logger
 from .easy_setting import *
 

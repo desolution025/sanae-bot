@@ -1,11 +1,13 @@
 import ujson as json
 from pathlib import Path
 from configparser import ConfigParser
+
 from tencentcloud.common import credential
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
 from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
 from tencentcloud.nlp.v20190408 import nlp_client, models
+
 try:
     from src.common.log import logger
 except ImportError:

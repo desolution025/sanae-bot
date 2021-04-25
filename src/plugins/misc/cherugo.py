@@ -11,9 +11,11 @@
 
 import re
 from itertools import zip_longest
+
 from nonebot import MatcherGroup
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent
+
 from src.common.rules import sv_sw
 from src.utils import reply_header
 

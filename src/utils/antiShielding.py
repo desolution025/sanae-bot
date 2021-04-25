@@ -4,6 +4,7 @@ from typing import Union
 from io import BytesIO
 from base64 import b64encode
 from functools import partial
+
 from PIL import Image
 from imghdr import what
 

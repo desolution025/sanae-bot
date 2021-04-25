@@ -161,6 +161,7 @@ cython_debug/
 
 # media resource files
 res/*
+fortune/
 
 # test files
 tmptst*.py
