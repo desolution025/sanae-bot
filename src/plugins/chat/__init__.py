@@ -4,7 +4,7 @@ from pathlib import Path
 
 from nonebot import MatcherGroup
 
-from src.common import Bot, MessageEvent, GroupMessageEvent, T_State, logger, BOTNAME
+from src.common import Bot, MessageEvent, GroupMessageEvent, T_State, logger, BOTNAME, BOTNAMES
 from src.common.rules import sv_sw, comman_rule
 from src.utils import reply_header
 from .tccli_nlp import ai_chat
@@ -64,15 +64,19 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
     优先级规则内，to_me时必定触发
     否则真实触发率为 群设置聊天触发率 * 返回信息的可信度
     """
-
+    msg = event.message.extract_plain_text()
     if event.message_type == 'group' and not event.is_tome():
+        for name in BOTNAMES:
+            if name in msg:
+                state['q'] = msg.replace(name, '你')
+                return True  # 内容里有bot名字的话会默认触发
         gid = str(event.group_id)
         prob = prob_settings[gid] if gid in prob_settings else 0.1
         if random() > prob:
             return False
         else:
-            reply, confidence = ai_chat(event.message.extract_plain_text())
-            logger.debug(f'{event.message.extract_plain_text()} 获得触发率 {confidence:.5f}')
+            reply, confidence = ai_chat(msg)
+            logger.debug(f'{msg} 获得触发率 {confidence:.5f}')
             if random() > confidence:
                 return False
             else:
@@ -85,8 +89,9 @@ chat = chatbot.on_message(rule=chat_checker, priority=4)
 
 @chat.handle()
 async def talk(bot: Bot, event: MessageEvent, state: T_State):
+    q = state['q'] if 'q' in state else event.message.extract_plain_text()
     if "reply" not in state:
-        reply, confidence = ai_chat(event.message.extract_plain_text())
+        reply, confidence = ai_chat(q)
     else:
         reply = state["reply"]
 

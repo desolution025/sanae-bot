@@ -1,13 +1,12 @@
 from pathlib import Path
 import ujson as json
 from datetime import datetime, timedelta
-from typing import List, Union
+from typing import Union
 try:
     from src.common import logger
 except ImportError:
     from loguru import logger
 
-# TODO: 防止好友拉入别的群，限制黑名单改为只响应白名单
 
 block_groups_file = Path(__file__).parent/"block_groups.json"
 block_users_file = Path(__file__).parent/"block_users.json"
@@ -143,6 +142,7 @@ if not enable_groups_file.exists():
 
 
 class Enable_Group:
+    """白名单群组，用作授权管理，也防止被拉入陌生群"""
 
     with enable_groups_file.open(encoding='utf-8') as j:
         enable_groups : dict = json.load(j)
@@ -150,15 +150,35 @@ class Enable_Group:
     def __init__(self, gid: Union[int, str]) -> None:
         self.gid = str(gid)
 
-    def check_enable(self):
-        # TODO: 检查到期时间
-        if self.gid in self.__class__.enable_groups:
-            return True
+    def check_enable(self, *, check_date: bool=False) -> bool:
+        """检查是白名单群，普通情况下不会检查过期时间
+
+        Args:
+            check_date (bool, optional): 使用此参数检查是否授权已到期. Defaults to False.
+
+        Returns:
+            bool: 通过结果
+        """
+        if not check_date:
+            if self.gid in self.__class__.enable_groups:
+                return True
+            else:
+                return False
         else:
-            return False
+            # TODO: 检查到期时间
+            pass
         
     def approve(self, term: int):
+        """授权群使用本bot
+
+        Args:
+            term (int): 授权天数
+
+        Returns:
+            bool: 授权是否成功，如果已经在授权名单中则返回False
+        """
         if self.gid in self.__class__.enable_groups:
+            logger.warning(f'Group {self.gid} has approved')
             return False
         else:
             data = {
@@ -168,16 +188,23 @@ class Enable_Group:
             self.__class__.enable_groups[self.gid] = data
             with enable_groups_file.open('w', encoding='utf-8') as j:
                 json.dump(self.__class__.enable_groups, j, indent=4)
+            logger.info(f'Approve group {self.gid} with {term} days')
             return True
 
     def renewal(self, term: int):
+        """续期许可证，如果还未开通则会运行授权函数
+
+        Args:
+            term (int): 续期天数
+        """
         if self.gid not in self.__class__.enable_groups:
+            logger.warning(f'Group {self.gid} never approved, will run aprroving program')
             self.approve(term)
         else:
             self.__class__.enable_groups[self.gid]['lease_term'] += term
             with enable_groups_file.open('w', encoding='utf-8') as j:
                 json.dump(self.__class__.enable_groups, j, indent=4)
-
+            logger.info(f'Renew group {self.gid} with {term} days')
 
 
 if __name__ == "__main__":

@@ -90,8 +90,10 @@ def imgseg(src:Union[str, Path, bytes]) -> MessageSegment:
         MessageSegment: image类型
     """
 
-    if isinstance(src, (str, Path)):
-        filestr = 'file:///' + str(src)
+    if isinstance(src, str):
+        filestr = 'file:///' + src
+    if isinstance(src, Path):
+        filestr = 'file:///' + str(src.resolve())
     else:
         filestr = 'base64://' + b64encode(src).decode('utf-8')
     return MessageSegment.image(filestr)

@@ -4,11 +4,11 @@ from nonebot.adapters.cqhttp.permission import GROUP
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import Event
 
-from src.plugins.botmanage.verify import Group_Blocker
+from src.common.verify import Group_Blocker
 from src.common.easy_setting import BOTNAME, SUPERUSERS
 
 
-plugin_name = '全局开关'
+_plugin_name = '全局开关'
 
 
 turn_on = on_command('on', aliases={'启动', 'ON'}, rule=to_me(), permission=GROUP)

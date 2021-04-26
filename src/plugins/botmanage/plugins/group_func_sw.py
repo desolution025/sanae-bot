@@ -6,7 +6,7 @@ from nonebot.adapters.cqhttp.permission import GROUP
 from src.common.rules import group_func_off, store_sw, func_ls
 
 
-plugin_name = '分群功能开关'
+_plugin_name = '分群功能开关'
 
 
 func_on = on_command('开启', aliases={'启用'}, permission=GROUP)

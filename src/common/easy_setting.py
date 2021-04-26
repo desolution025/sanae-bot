@@ -47,6 +47,7 @@ class EasySetting(BaseSettings):
 easy_setting = EasySetting()
 
 SUPERUSERS = easy_setting.superusers
+BOTNAMES = easy_setting.nickname
 BOTNAME = easy_setting.nickname[0]
 DEBUG = easy_setting.debug
 CANCEL_EXPRESSION = easy_setting.cancel_expression

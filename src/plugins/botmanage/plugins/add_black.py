@@ -8,7 +8,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.adapters.cqhttp.permission import GROUP_OWNER
 
 from src.common.log import logger
-from src.plugins.botmanage.verify import User_Blocker
+from src.common.verify import User_Blocker
 from src.common.easy_setting import SUPERUSERS, BOTNAME
 
 

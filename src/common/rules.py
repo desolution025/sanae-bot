@@ -7,13 +7,15 @@
 
 from pathlib import Path
 import ujson as json
-from typing import Callable, Iterable
+from typing import Union, Callable, Iterable, Tuple
 from functools import reduce
 
 from nonebot.rule import Rule
 from nonebot.typing import T_State
 from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import Event, GroupMessageEvent
+from nonebot.adapters.cqhttp.event import Event, MessageEvent, GroupMessageEvent
+
+from .log import logger
 
 
 swfile = Path(__file__).parent/'group_func_off.json'
@@ -77,7 +79,7 @@ def comman_rule(match_ev: Event, **kw) -> Callable:
         ``example02``: comman_rule(HonorNotifyEvent, honor_type="talkative")可过滤出龙王变更规则
         ``example03``: comman_rule(GroupDecreaseNoticeEvent, sub_type=("leave","kick"))可过滤出群成员减少规则，并且不包含登录号被踢("kick_me")的情况
     """
-    async def ev_type_checker(bot:Bot, event: Event, state: T_State) -> bool:
+    async def ev_type_checker(bot: Bot, event: Event, state: T_State) -> bool:
         if isinstance(event, match_ev):
             if not kw:
                 return True
@@ -97,3 +99,24 @@ def comman_rule(match_ev: Event, **kw) -> Callable:
                 else:
                     raise AttributeError(f'Irregular incoming parameters: {kw}')
     return ev_type_checker
+
+
+def full_match(cmd: Union[str, Tuple[str]]) -> Rule:
+    """
+    :Summary:
+        完全匹配规则，完全符合对话时触发规则
+    
+        on_message时可用
+
+    :Args:
+
+        ``cmd``: 要匹配的命令，可以是字符串或字符串组成的Tuple
+    """
+
+    async def fm_checker(bot: Bot, event: MessageEvent, state: T_State) -> bool:
+        msg = str(event.message).strip()
+        if isinstance(cmd, str) and msg == cmd or isinstance(cmd, Tuple) and msg in cmd:
+            return True
+        else:
+            return False
+    return Rule(fm_checker)
