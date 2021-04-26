@@ -48,7 +48,7 @@ class Blocker:
 
     def check_block(self) -> bool:
         '''
-        检测是否为阻塞id
+        检测是否为阻塞id，True为非阻塞
         '''
         block_ls = self.__class__.block_list
         # reason为2根据时间解禁，其他返回false，未禁止返回true
@@ -159,6 +159,7 @@ class Enable_Group:
         Returns:
             bool: 通过结果
         """
+
         if not check_date:
             if self.gid in self.__class__.enable_groups:
                 return True

@@ -106,6 +106,8 @@ async def recieve_cmd(bot: Bot, event: MessageEvent, state: T_State):
 @music.got("kwd", prompt='你想听什么歌呢？')
 async def parse_func(bot: Bot, event: MessageEvent, state: T_State):
     kwd = state['kwd'] if "kwd" in state else event.message.extract_plain_text().strip()
+    if kwd in CANCEL_EXPRESSION:
+        await music.finish('好吧，那就不听了')
     trigger = state['trigger']
     # 不同的搜索类型生成对应app的列表，脑抽搞乱了
     if trigger.find('网易云') != -1:

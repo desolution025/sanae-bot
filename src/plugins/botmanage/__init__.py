@@ -36,12 +36,15 @@ async def authorize(bot: Bot, event: PrivateMessageEvent, state: T_State):
         group_checker.approve(args.time)
 
 
-# 事件预处理规则，message类型的群聊内如果被阻塞中，非对bot使用的启动命令会忽略
+# 事件预处理规则，群未被授权 或 群响应被关闭 且 对bot使用的启动命令以外 会忽略
 @run_preprocessor
 async def global_switch_filter(mathcer: Matcher, bot: Bot, event: Event, state:T_State):
-    if hasattr(event, 'group_id') and not Enable_Group(event.group_id).check_enable() and not Group_Blocker(event.group_id).check_block()\
-        and not (event.get_message().extract_plain_text() in ('on', '启动', 'ON') and event.is_tome()):
+    if hasattr(event, 'group_id') and (not Enable_Group(event.group_id).check_enable() or\
+        not Group_Blocker(event.group_id).check_block() and\
+        not (event.get_message().extract_plain_text() in ('on', '启动', 'ON') and event.is_tome())):
+
         raise IgnoredException('该群已在全局关闭服务')
+
     if event.get_type() in ('message', 'notice', 'request') and not User_Blocker(event.user_id).check_block():
         raise IgnoredException('该用户在阻塞列表中')
 
