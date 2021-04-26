@@ -9,10 +9,13 @@ from nonebot.adapters.cqhttp.permission import GROUP_OWNER
 
 from src.common.log import logger
 from src.plugins.botmanage.verify import User_Blocker
-from src.common.easy_setting import SUPERUSERS
+from src.common.easy_setting import SUPERUSERS, BOTNAME
 
 
 plugin_name = '添加黑名单'
+
+
+plugin_usage = f'如果不想要让{BOTNAME}回复您的任何消息的话可以at我发送[屏蔽我]，{BOTNAME}即会忽略您的任何消息\n(当然不是加入黑名单，只是不响应你的消息)'
 
 
 # 由维护组主动将用户加入黑名单

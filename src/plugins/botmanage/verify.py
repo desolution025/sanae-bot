@@ -1,23 +1,29 @@
 from pathlib import Path
 import ujson as json
 from datetime import datetime, timedelta
+from typing import List, Union
+try:
+    from src.common import logger
+except ImportError:
+    from loguru import logger
+
 # TODO: 防止好友拉入别的群，限制黑名单改为只响应白名单
 
 block_groups_file = Path(__file__).parent/"block_groups.json"
 block_users_file = Path(__file__).parent/"block_users.json"
 
 
-block_groups = {}  # 忽略群名单
-block_users = {}  # 忽略用户名单
+# block_groups = {}  # 忽略群名单
+# block_users = {}  # 忽略用户名单
 
 
 if not block_groups_file.exists():
     with block_groups_file.open('w', encoding='utf-8') as j:
-        json.dump(block_groups, j, indent=4)
+        json.dump({}, j, indent=4)
 
 if not block_users_file.exists():
     with block_users_file.open('w', encoding='utf-8') as j:
-        json.dump(block_users, j, indent=4)
+        json.dump({}, j, indent=4)
 
 
 # with block_groups_file.open(encoding='utf-8') as j:
@@ -106,8 +112,10 @@ class Group_Blocker(Blocker):
         '''
         if self.__class__.block_list[self.id]['reason'] == 3:
             self.rm_block()
+            logger.info(f'Remove group {self.id} from block list')
             return True
         else:
+            logger.info(f'Failed to unblock group {self.id} , reason: {self.__class__.block_list[self.id]["reason"]}')
             return False
 
 
@@ -121,6 +129,55 @@ class User_Blocker(Blocker):
     def __init__(self, uid: int) -> None:
         self.id = str(uid)
         self.file = block_users_file
+
+
+#——————白名单群组——————
+
+
+enable_groups_file = Path(__file__).parent/"enable_groups.json"
+
+
+if not enable_groups_file.exists():
+    with enable_groups_file.open('w', encoding='utf-8') as j:
+        json.dump({}, j, indent=4)
+
+
+class Enable_Group:
+
+    with enable_groups_file.open(encoding='utf-8') as j:
+        enable_groups : dict = json.load(j)
+
+    def __init__(self, gid: Union[int, str]) -> None:
+        self.gid = str(gid)
+
+    def check_enable(self):
+        # TODO: 检查到期时间
+        if self.gid in self.__class__.enable_groups:
+            return True
+        else:
+            return False
+        
+    def approve(self, term: int):
+        if self.gid in self.__class__.enable_groups:
+            return False
+        else:
+            data = {
+                'authorize_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'lease_term': term
+            }
+            self.__class__.enable_groups[self.gid] = data
+            with enable_groups_file.open('w', encoding='utf-8') as j:
+                json.dump(self.__class__.enable_groups, j, indent=4)
+            return True
+
+    def renewal(self, term: int):
+        if self.gid not in self.__class__.enable_groups:
+            self.approve(term)
+        else:
+            self.__class__.enable_groups[self.gid]['lease_term'] += term
+            with enable_groups_file.open('w', encoding='utf-8') as j:
+                json.dump(self.__class__.enable_groups, j, indent=4)
+
 
 
 if __name__ == "__main__":
