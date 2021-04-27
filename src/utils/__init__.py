@@ -99,6 +99,24 @@ def imgseg(src:Union[str, Path, bytes]) -> MessageSegment:
     return MessageSegment.image(filestr)
 
 
+RES_PATH = Path.cwd()/'res'
+
+
+def link_res(filename: str, type_: str="image") -> MessageSegment:
+    """快速链接本地库资源，输入文件名直接获得资源生成的MessageSegment
+
+    Args:
+        filename (str): 文件名，可有斜杠表示子文件夹
+        type_ (str, optional): 资源类型 TODO：加入更多资源类型. Defaults to "image".
+
+    Returns:
+        MessageSegment: 可直接发送的消息段
+    """
+    if type_ == "image":
+        fp = RES_PATH/"images"/filename
+        return imgseg(fp)  
+
+
 class FreqLimiter:
     """使用此类限制每个用户的单个功能调用频率
 

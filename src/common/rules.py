@@ -14,6 +14,7 @@ from nonebot.rule import Rule
 from nonebot.typing import T_State
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import Event, MessageEvent, GroupMessageEvent
+from nonebot.adapters.cqhttp.message import MessageSegment, Message
 
 from .log import logger
 
@@ -38,9 +39,9 @@ if not swfile.exists():
 with swfile.open(encoding='utf-8') as j:
     group_func_off = json.load(j)
     
-func_ls = []  # 存储所有功能名字的列表，建立功能开关时自动存入，用来查询是否是真实存在的功能
+func_ls = {}  # 存储所有功能名字的列表，建立功能开关时自动存入，用来查询是否是真实存在的功能
 
-def sv_sw(name: str) -> Rule:
+def sv_sw(name: str, usage: Union[str, Message, MessageSegment]="") -> Rule:
     """
     :Summary:
         
@@ -48,11 +49,11 @@ def sv_sw(name: str) -> Rule:
     
     :Usage:
         
-        传入规则时使用sv_sw(name: str)
+        传入规则时使用sv_sw(name, usage)
         使用相同name的功能以相同的开关控制
     """
     if name not in func_ls:
-        func_ls.append(name)
+        func_ls[name] = usage
     async def _checker(bot: Bot, event: GroupMessageEvent, state: T_State):
         if hasattr(event, 'group_id') and str(event.group_id) in group_func_off\
             and name in group_func_off[str(event.group_id)]:

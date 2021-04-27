@@ -12,10 +12,10 @@ from src.common.verify import User_Blocker
 from src.common.easy_setting import SUPERUSERS, BOTNAME
 
 
-plugin_name = '添加黑名单'
+_plugin_name = '添加黑名单'
 
 
-plugin_usage = f'如果不想要让{BOTNAME}回复您的任何消息的话可以at我发送[屏蔽我]，{BOTNAME}即会忽略您的任何消息\n(当然不是加入黑名单，只是不响应你的消息)'
+_plugin_usage = f'如果不想要让{BOTNAME}回复您的任何消息的话可以at我发送[屏蔽我]，{BOTNAME}即会忽略您的任何消息\n(当然不是加入黑名单，只是不响应你的消息)'
 
 
 # 由维护组主动将用户加入黑名单
@@ -61,7 +61,6 @@ async def abbs_confirmation_handle(bot: Bot, event: Event, state: T_State):
         await add_black_by_spuser.finish('不符合预期的输入，将不处理本次操作')
 
 
-
 # 用户主动将自己加入屏蔽列表
 add_black_by_user = on_command('屏蔽我', rule=to_me())
 
@@ -80,7 +79,6 @@ async def abbo_confirmation_handle(bot: Bot, event: Event):
         await add_black_by_user.finish('未输入确认信息，我仍然会响应您的消息~')
 
 
-
 # 辱骂屏蔽
 BANNED_WORD = {
     'rbq', 'RBQ', '憨批', '废物', '死妈', '崽种', '傻逼', '傻逼玩意',
@@ -88,7 +86,9 @@ BANNED_WORD = {
     'nmsl', 'D区', '口区', '我是你爹', 'nmbiss', '弱智', '给爷爬', '杂种爬','爪巴'
 }
 
+
 anti_abuse = on_command('SB', aliases=BANNED_WORD, rule=to_me())
+
 
 @anti_abuse.handle()
 async def ban_user(bot: Bot, event: Event):

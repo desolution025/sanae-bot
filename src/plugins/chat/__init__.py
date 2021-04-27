@@ -11,6 +11,12 @@ from .tccli_nlp import ai_chat
 
 
 plugin_name = 'AI聊天'
+plugin_usage = """
+﹟ 会在聊天中随机插嘴
+﹟ 使用"聊天触发率 <0-50的数字>"可设置触发回复的最大百分比概率
+﹟ 实际概率会根据是否能识别对话进一步下调
+﹟ 默认为5%，建议不要设置过高
+""".strip()
 
 
 configfile = Path(__file__).parent/'chat_prob.json'
@@ -29,7 +35,7 @@ def record_settings(gid: str, prob: float):
         json.dump(prob_settings, j, indent=4)
 
 
-chatbot = MatcherGroup(type='message', rule=sv_sw('AI聊天'))
+chatbot = MatcherGroup(type='message', rule=sv_sw(plugin_name, plugin_usage))
 
 
 set_prob = chatbot.on_command('聊天触发率', rule=comman_rule(GroupMessageEvent), priority=2)

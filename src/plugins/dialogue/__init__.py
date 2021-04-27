@@ -19,6 +19,39 @@ from .corpus import query, query_exists, plus_one, insertone, insertmany, update
 
 
 plugin_name = '问答对话'
+plugin_usage = """
+﹟ 使用学习功能可增加经验值与资产，支持图片、emoji
+﹟ 学习之后的内容会按照出现概率进行回复，短时间内不会回复重复的内容
+﹟ 设置的概率为相对概率，实际的概率会根据相同对话的条目数与对话地点进行调整
+
+>>>学习方法：
+﹟ [学习 问句 回答 答句] 可快速设置对话，记得用空格做分隔，
+﹟ 不方便连续发送的内容(如内容中包含图片)可单独发送[学习]然后按照说明输入
+﹟ 可分别在私聊和群中使用[私聊学习]和[群内学习]进行仅能在学习地点出现的对话
+   (也就是群内学习的内容不会在其它群内散播，私聊学习的内容仅仅只能创建人在私聊中触发)
+
+※※ 看不懂就只使用一个[学习]就行了
+
+>>>查询方法：
+﹟ [查询对话 问题内容]根据查询信息返回可能会触发的对话
+﹟ 由于图太多了会突破发图数量限制造成封号，暂时设置了翻页查看，还在改进中
+﹟ [历史学习 随意信息]模糊查询自己设置过的对话(还未开放使用)(还没写__)
+
+>>>修改&删除方法
+﹟ 刚刚学习过对话之后可直接输入0-100范围内的数字作为相对出现率，默认70%
+﹟ [修改出现率 -对话ID -出现率数字]可重新设置某个对话的出现率，例：修改出现率 -2234 -80
+﹟ [删除对话 对话ID]并不会删除对话，而是会将对话的出现率设置为0，则此对话任何时候不会出现，但仍可之后重新调整出现率
+
+>>>批量学习
+﹟ [批量学习] 输入内容中使用 "|" 做分隔符，则会将问句与回答做排列组合一起学习
+例： <问> 群主大人|管理sama <答> 不是好人|变态|流氓|女装犯|后宫男宠三千万
+    则出现“群主大人”或“管理sama”的对话时会随机触发答句中的某个赞美信息(如果通过了触发率的条件下)
+﹟ 同样支持[批量私聊学习] [批量群内学习]
+
+※※v0.0.14之前学习的内容普遍设置为了50，有大量内容需要修改回100%触发的可联系维护组
+""".strip()
+
+# TODO: 把帮助分开，不然太长了
 
 
 CORPUS_IMAGES_PATH = Path(r'.\res')/'images'/'corpus_images'
@@ -490,13 +523,11 @@ async def handle_query(bot: Bot, event: MessageEvent, state: T_State):
     record_bar = Pagination(*result_ls)
     if len(record_bar.rcd_ls) == 1:
         msg = ''.join(result_ls)
-        # await query_record.finish(reply_header(event, Message(msg + '使用 [修改出现率] <对话id> <出现率> 来修改指定对话的相对出现率')))
-        await query_record.finish(reply_header(event, msg + '使用"[修改出现率] <对话id> <出现率>"来修改指定对话的相对出现率\n例：修改出现率 -2234 -10'))
+        await query_record.finish(reply_header(event, Message(msg + '使用"[修改出现率] <对话id> <出现率>"来修改指定对话的相对出现率\n例：修改出现率 -2234 -10')))
     else:
         state["record_bar"] = record_bar
         state['left_wrong_times'] = 3
-        # await query_record.send(reply_header(event, Message(record_bar + '发送[上一页][下一页]翻页查看列表，发送<序号>跳转到指定页，发送[取消]退出当前查询')))
-        await query_record.send(reply_header(event, str(record_bar) + '\n发送[上一页][下一页]翻页查看列表，发送<序号>跳转到指定页，发送[退出]退出当前查询'))
+        await query_record.send(reply_header(event, Message(str(record_bar) + '\n发送[上一页][下一页]翻页查看列表，发送<序号>跳转到指定页，发送[退出]退出当前查询')))
 
 
 @query_record.receive()
@@ -540,8 +571,7 @@ async def look_over(bot: Bot, event: MessageEvent, state: T_State):
     else:
         await query_record.finish('未期望的输入，已退出当前查询对话')
 
-    # await query_record.reject(Message(msg))
-    await query_record.reject(msg)
+    await query_record.reject(Message(msg))
 
 
 #—————————————————修改——————————————————

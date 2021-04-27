@@ -16,7 +16,7 @@ assets_folder = (Path(__file__).parent/'images'/'fortune')
 sticks = [i for i in  assets_folder.glob('*.[jp][pn]*g')]
 
 
-fortune = on_message(rule=sv_sw('运势')&full_match(('运势', '今日运势')), priority=2)
+fortune = on_message(rule=sv_sw(plugin_name, plugin_usage)&full_match(('运势', '今日运势')), priority=2)
 
 
 @fortune.handle()
