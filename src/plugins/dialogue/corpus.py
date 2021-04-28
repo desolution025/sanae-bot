@@ -77,8 +77,8 @@ def plus_one(sid: int, gid: int, plus_num: int=1):
         cmd = 'UPDATE corpus SET call_times=call_times+%s WHERE ID=%s;'
         param = (plus_num, sid)
         qb.update(cmd, param)
-    his = Called_Reply[gid]
     if gid:
+        his = Called_Reply[gid]
         his.called.add(sid)
         his.check_expired()
     logger.debug(f'SID {sid}: call_times + {plus_num}')

@@ -7,6 +7,7 @@ from urllib.request import urlretrieve
 from random import choice, randint
 
 from emoji import emojize, demojize
+from imghdr import what
 from nonebot import MatcherGroup
 from nonebot.message import handle_event
 
@@ -100,14 +101,18 @@ def localize(url: str, filename: str, failed_times: int=0) -> Optional[str]:
         Optional[str]: 成功下载会返回下载后的文件储存路径，否则返回None
     """
 
-    fp = CORPUS_IMAGES_PATH/filename
-    if fp.exists():
+    searchfile = CORPUS_IMAGES_PATH.glob(filename.split('.')[0] + ".*")
+    for f in searchfile:
+        fp = f
         logger.debug(f'File [{filename}] has localized with {fp}')
-        return fp
+        return fp.name
+    fp = CORPUS_IMAGES_PATH/filename
     try:
         urlretrieve(url, fp)
-        logger.info(f'Localize image [{filename}] with path: {fp}')
-        return fp
+        realpath = fp.with_suffix('.' + what(fp))  # 修复文件为真正的后缀
+        fp.rename(realpath)
+        logger.info(f'Localize image [{filename}] with path: {realpath.name}')
+        return realpath.name
     except Exception as err:
         failed_times += 1
         logger.warning(f'Download file [{url}] error {failed_times} times: {err}')
@@ -139,13 +144,13 @@ async def msg2str(message: Message, *, localize_: bool=False, bot: Optional[Bot]
         elif seg.type == 'image':
             if not localize_:
                 strcq += f'[CQ:image,file={seg.data["file"]}]'
-            else:
-                fileinfo = await bot.get_image(file=seg.data["file"])
-                filename = re.sub(r'[\{\}-]', '', fileinfo["filename"]).lower()  # 返回filename字段是{xxx-xxx-xxx...}.jpg的形式，去掉中括号和横杠
-                fp = localize(seg.data["url"], filename)
-                if not fp:
+            else:  # TODO: 把这个改成同步函数，好tm傻逼啊我
+                # fileinfo = await bot.get_image(file=seg.data["file"])
+                # filename = re.sub(r'[\{\}-]', '', fileinfo["filename"]).lower()  # 返回filename字段是{xxx-xxx-xxx...}.jpg的形式，去掉中括号和横杠
+                realname = localize(seg.data["url"], seg.data["file"])
+                if not realname:
                     return None
-                strcq += f'[CQ:image,file={filename}]'
+                strcq += f'[CQ:image,file=file:///{{res_path}}\\{realname}]'
         else:
             strcq += str(seg)
     return strcq
@@ -230,6 +235,9 @@ class Pagination:
 qanda = MatcherGroup(type='message', rule=sv_sw('问答对话', plugin_usage))
 
 
+#—————————————————回复——————————————————
+
+
 async def reply_checker(bot: Bot, event: MessageEvent, state: T_State) -> bool:
     """问答对话触发规则"""
     q = await msg2str(Message(event.raw_message))  # 仅仅使用message会去掉呼唤bot昵称的原文本，造成问句中有bot昵称时逻辑混乱
@@ -261,9 +269,6 @@ async def reply_checker(bot: Bot, event: MessageEvent, state: T_State) -> bool:
     # else:
     #     logger.debug(f'匹配失败：q: {q}, prob: {prob}, 随机到: {gen_num}, 返回a: {answer}')
     #     return False     
-
-
-#—————————————————回复——————————————————
 
 
 reply = qanda.on_message(rule=reply_checker, priority=3)
