@@ -23,6 +23,8 @@ total_help = f"""
 at{BOTNAME}并发送[屏蔽我] 使{BOTNAME}不响应你的消息
 [关于Sanae-Bot] 本Bot信息
 //**隐藏功能请自行探索**//
+
+※※BUG尽快反馈！刚更新十分不稳定※※
 """.strip()
 
 
