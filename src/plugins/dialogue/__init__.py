@@ -85,7 +85,7 @@ async def guide_batch_learn(bot: Bot):
 #———————————————————————————————————————
 
 
-CORPUS_IMAGES_PATH = Path(r'.\res')/'images'/'corpus_images'
+CORPUS_IMAGES_PATH = (Path(r'.\res')/'images'/'corpus_imgs').resolve()
 
 
 def localize(url: str, filename: str, failed_times: int=0) -> Optional[str]:
@@ -163,7 +163,7 @@ def msglize(msg: str, name: str="{name}", prestr: bool=False) -> Union[Message, 
         Union[Message, str]: 解析后自动转换Message或保持str
     """
     if '[CQ:image,' in msg or "{name}" in msg:
-        msg = msg.format(res_path=CORPUS_IMAGES_PATH, name=name)
+        msg = msg.format(res_path=str(CORPUS_IMAGES_PATH), name=name)
     if prestr:
         return emojize(msg)
     else:

@@ -194,7 +194,7 @@ class DailyNumberLimiter:
             # 如果没有用户记录在相关列上增加用户记录并设置为初始值
             self.conn.insert(
                 f"INSERT INTO calltimes (qq_number, {func_name}_day, {func_name}_count, {func_name}_total) "
-                "VALUES(%s, CRUDATE(), 0, 0)",
+                "VALUES(%s, CURDATE(), 0, 0)",
                 (uid,)
                 )
             self.last_call, self.count, self.total = date.today(), 0, 0

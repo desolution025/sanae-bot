@@ -9,6 +9,7 @@ from pathlib import Path
 import ujson as json
 from typing import Union, Callable, Iterable, Tuple
 from functools import reduce
+from collections import defaultdict
 
 from nonebot.rule import Rule
 from nonebot.typing import T_State
@@ -37,7 +38,7 @@ if not swfile.exists():
     store_sw()
 
 with swfile.open(encoding='utf-8') as j:
-    group_func_off = json.load(j)
+    group_func_off = defaultdict(dict, json.load(j))
     
 func_ls = {}
 """
