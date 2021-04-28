@@ -27,12 +27,16 @@ from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 
 
 plugin_name = '色图'
+plugin_usage = """别TM搜什么孙笑川色图，诸葛亮色图了，淦
+———————
+设置sl只有是否最大5级才对这个有用，以下等级可以忽略
+""".strip()
 
 
 setu = on_regex(
     r'^ *再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?[色瑟涩][图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
     flags=re.I,
-    rule=sv_sw('色图') & comman_rule(MessageEvent),
+    rule=sv_sw(plugin_name, plugin_usage) & comman_rule(MessageEvent),
     priority=2
     )
 
@@ -44,7 +48,7 @@ async def send_lolicon(bot: Bot, event: MessageEvent, state: T_State):
         gid = event.group_id
         if str(gid) not in sl_settings:
             await setu.finish('''先设置本群sl再使用此功能吧
-[设置sl]+<最小sl>-<最大sl>
+[设置sl 最小sl-最大sl]
 例如：设置sl 0-4
 ────────────
 sl说明：
@@ -305,7 +309,7 @@ async def call_img(bot:Bot, event: MessageEvent, state: T_State):
     return True
 
 
-rand_img = on_keyword({'来张', '一张'}, rule=sv_sw('杂图') & call_img, priority=2)
+rand_img = on_keyword({'来张', '一张'}, rule=sv_sw('杂图', '啊这..不好解释', '其它') & call_img, priority=2)
 msc_img_lmt = FuncLimiter(func_name='杂图', cd_rel=150, cost=3, max_free=1, only_group=False)
 
 

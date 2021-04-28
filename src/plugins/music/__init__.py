@@ -15,6 +15,7 @@ from .migu import search_migu
 # TODO: 重写，太乱
 
 plugin_name = "点歌"
+plugin_usage = "网易云、QQ音乐、咪咕，其它再说"
 
 
 numrex = re.compile(r'[^\d一二三四五六七八九十]*([\d一二三四五六七八九十]*)\D*')
@@ -89,7 +90,7 @@ music = on_command('点歌',
                             '网易云','搜网易云', '网易云点歌', '网易云搜歌',
                             'QQ音乐', '搜QQ音乐', 'QQ音乐点歌','QQ音乐搜歌',
                             '咪咕', '搜咪咕', '咪咕点歌', '咪咕搜歌'},
-                    rule=sv_sw('点歌'),
+                    rule=sv_sw(plugin_name, plugin_usage),
                     priority=2)
 limiter = FuncLimiter('点歌', cd_rel=120, max_free=2, cost=3)
 

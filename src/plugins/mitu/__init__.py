@@ -19,7 +19,24 @@ from .mitu_lib import get_mitu
 
 
 plugin_name = '美图'
-
+plugin_usage = """还没完善，可以先忽略本功能
+关于设置sl：
+sl说明：
+大概可以解释成本群能接收的工口程度，sl越高的图被人看见越会触发社死事件
+!!!!!没有那种不属于人类的XP!!!!!
+最低sl0：不含任何ero要素，纯陶冶情操，也有一部分风景图
+最高sl5: 就是R18了
+中间的等级依次过渡
+────────────
+[设置sl 最小sl-最大sl]
+例如：设置sl 0-4
+[锁定sl] 管理锁定之后群员不可设置sl，且锁定权限依据操作者权限
+例如：群主锁定，管理员不可解锁；管理员锁定，群主可解锁但群员不可解锁
+[解锁sl] 解锁之后群员可随意设置sl
+[查询sl] 查看本群当前设置
+[本群评级] 未开放(要写，没写，画线去掉)
+────────────
+""".strip()
 
 #——————————————————设置sl——————————————————
 
@@ -158,7 +175,7 @@ async def report_sl(bot: Bot, event: GroupMessageEvent):
 mitu = on_regex(
     r'^ *再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?美[图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
     flags=re.I,
-    rule=sv_sw('美图') & comman_rule(GroupMessageEvent),
+    rule=sv_sw(plugin_name, usage=plugin_usage) & comman_rule(GroupMessageEvent),
     priority=2
     )
 
@@ -172,7 +189,7 @@ async def send_mitu(bot: Bot, event: GroupMessageEvent, state: T_State):
     gid = event.group_id
     if str(gid) not in sl_settings:
         await mitu.finish('''先设置本群sl再使用此功能吧
-[设置sl]+<最小sl>-<最大sl>
+[设置sl 最小sl-最大sl]
 例如：设置sl 0-4
 ────────────
 sl说明：

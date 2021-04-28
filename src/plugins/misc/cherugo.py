@@ -23,7 +23,7 @@ from src.utils import reply_header
 plugin_name = '切噜语转换'
 
 
-plugin_usage = '[切噜一下] <随意文字> 转化为切噜语\n<切噜语> 转化为人类语言'
+plugin_usage = '[切噜一下 随意文字] 转化为切噜语\n发送<切噜语> 转化为人类语言'
 
 
 CHERU_SET = '切卟叮咧哔唎啪啰啵嘭噜噼巴拉蹦铃'
@@ -71,7 +71,7 @@ def cheru2str(c: str) -> str:
     return rex_cheru_word.sub(lambda w: cheru2word(w.group()), c)
 
 
-cherugo = MatcherGroup(type='message', rule=sv_sw(plugin_name, usage=plugin_usage))
+cherugo = MatcherGroup(type='message', rule=sv_sw(plugin_name, usage=plugin_usage, hierarchy='其它'))
 
 
 tocherugo = cherugo.on_startswith('切噜一下')

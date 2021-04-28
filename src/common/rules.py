@@ -39,21 +39,27 @@ if not swfile.exists():
 with swfile.open(encoding='utf-8') as j:
     group_func_off = json.load(j)
     
-func_ls = {}  # 存储所有功能名字的列表，建立功能开关时自动存入，用来查询是否是真实存在的功能
+func_ls = {}
+"""
+存储所有功能名字的列表，建立功能开关时自动存入，用来查询是否是真实存在的功能
+结构：
+name: [usage, top] TODO: 有确切需求时要加入默认关闭选项
+"""
 
-def sv_sw(name: str, usage: Union[str, Message, MessageSegment]="") -> Rule:
+def sv_sw(name: str, usage: Union[str, Message, MessageSegment]="", hierarchy: str="top") -> Rule:
     """
     :Summary:
         
         使用此规则可以控制在不同群内的功能开关
     
-    :Usage:
-        
-        传入规则时使用sv_sw(name, usage)
-        使用相同name的功能以相同的开关控制
+    :Args:
+        ``name``: 功能名字，使用相同name的功能以相同的开关控制
+        ``usage``: 功能说明，可传入Message来添加图片信息
+        ``hierarchy``: 层级，查看帮助时top以外的功能不会显示在总菜单中，而是在指定层级的功能中显示
     """
+    
     if name not in func_ls:
-        func_ls[name] = usage
+        func_ls[name] = [usage, hierarchy]
     async def _checker(bot: Bot, event: GroupMessageEvent, state: T_State):
         if hasattr(event, 'group_id') and str(event.group_id) in group_func_off\
             and name in group_func_off[str(event.group_id)]:

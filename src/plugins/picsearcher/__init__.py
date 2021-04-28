@@ -18,6 +18,17 @@ from .trace import get_des as get_des_trace
 from .yandex import get_des as get_des_yandex
 
 
+plugin_name = '搜图'
+plugin_usage = """
+原作者@synodriver
+有些引擎挂掉了所以先精简到现在这样
+如果有恢复的还会添加搜索模式
+———————
+[搜图 图片]从SauceNao和ascii2d搜图源
+[上一张是什么] [搜上一张图]可以直接搜索刚刚发的图是啥
+""".strip()
+
+
 async def get_des(url: str, mode: str):
     """
     :param url: 图片链接
@@ -44,7 +55,7 @@ async def get_des(url: str, mode: str):
             yield msg
 
 
-setu = on_command("搜图", aliases={"search"}, rule=sv_sw('搜图'), priority=2)
+setu = on_command("搜图", aliases={"search"}, rule=sv_sw('搜图', plugin_usage), priority=2)
 
 
 @setu.handle()

@@ -71,6 +71,8 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
     否则真实触发率为 群设置聊天触发率 * 返回信息的可信度
     """
     msg = event.message.extract_plain_text()
+    if not msg or len(msg) > 50:
+        return False
     if event.message_type == 'group' and not event.is_tome():
         for name in BOTNAMES:
             if name in msg:

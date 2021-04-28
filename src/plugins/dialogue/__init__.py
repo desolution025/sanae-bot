@@ -11,7 +11,7 @@ from nonebot import MatcherGroup
 from nonebot.message import handle_event
 
 from src.common import Bot, MessageEvent, GroupMessageEvent, PrivateMessageEvent, Message, MessageSegment, T_State, CANCEL_EXPRESSION, SUPERUSERS
-from src.common.rules import sv_sw
+from src.common.rules import sv_sw, full_match
 from src.common.log import logger
 from src.common.levelsystem import UserLevel
 from src.utils import reply_header, cgauss, PagingBar
@@ -23,35 +23,66 @@ plugin_usage = """
 ﹟ 使用学习功能可增加经验值与资产，支持图片、emoji
 ﹟ 学习之后的内容会按照出现概率进行回复，短时间内不会回复重复的内容
 ﹟ 设置的概率为相对概率，实际的概率会根据相同对话的条目数与对话地点进行调整
+———————
+发送以下指令查看相应的使用方式(带上两边的Q和A)
+Q学习方法A
+Q查询方法A
+Q修改方法A
+Q批量学习A
+""".strip()
 
->>>学习方法：
+
+#—————————————————功能说明——————————————————
+
+
+guide = MatcherGroup(type='message', priority=2)
+
+
+learn_method = guide.on_message(rule=full_match('Q学习方法A'))
+query_method = guide.on_message(rule=full_match('Q查询方法A'))
+modify_method = guide.on_message(rule=full_match('Q修改方法A'))
+batch_learn_method = guide.on_message(rule=full_match('Q批量学习A'))
+
+
+@learn_method.handle()
+async def guide_learn(bot: Bot):
+    await learn_method.finish(""">>>学习方法：
 ﹟ [学习 问句 回答 答句] 可快速设置对话，记得用空格做分隔，
 ﹟ 不方便连续发送的内容(如内容中包含图片)可单独发送[学习]然后按照说明输入
 ﹟ 可分别在私聊和群中使用[私聊学习]和[群内学习]进行仅能在学习地点出现的对话
    (也就是群内学习的内容不会在其它群内散播，私聊学习的内容仅仅只能创建人在私聊中触发)
 
-※※ 看不懂就只使用一个[学习]就行了
+※※ 看不懂就只使用一个[学习]就行了""")
 
->>>查询方法：
+
+@query_method.handle()
+async def guide_query(bot: Bot):
+    await query_method.finish(""">>>查询方法：
 ﹟ [查询对话 问题内容]根据查询信息返回可能会触发的对话
 ﹟ 由于图太多了会突破发图数量限制造成封号，暂时设置了翻页查看，还在改进中
-﹟ [历史学习 随意信息]模糊查询自己设置过的对话(还未开放使用)(还没写__)
+﹟ [历史学习 随意信息]模糊查询自己设置过的对话(还未开放使用)(还没写__)""")
 
->>>修改&删除方法
+
+@modify_method.handle()
+async def guide_modify(bot: Bot):
+    await modify_method.finish(""">>>修改&删除方法
 ﹟ 刚刚学习过对话之后可直接输入0-100范围内的数字作为相对出现率，默认70%
 ﹟ [修改出现率 -对话ID -出现率数字]可重新设置某个对话的出现率，例：修改出现率 -2234 -80
 ﹟ [删除对话 对话ID]并不会删除对话，而是会将对话的出现率设置为0，则此对话任何时候不会出现，但仍可之后重新调整出现率
 
->>>批量学习
+※※v0.0.14之前学习的内容普遍设置为了50，有大量内容需要修改回100%触发的可联系维护组""")
+
+
+@batch_learn_method.handle()
+async def guide_batch_learn(bot: Bot):
+    await batch_learn_method.finish(""">>>批量学习
 ﹟ [批量学习] 输入内容中使用 "|" 做分隔符，则会将问句与回答做排列组合一起学习
 例： <问> 群主大人|管理sama <答> 不是好人|变态|流氓|女装犯|后宫男宠三千万
     则出现“群主大人”或“管理sama”的对话时会随机触发答句中的某个赞美信息(如果通过了触发率的条件下)
-﹟ 同样支持[批量私聊学习] [批量群内学习]
+﹟ 同样支持[批量私聊学习] [批量群内学习]""")
 
-※※v0.0.14之前学习的内容普遍设置为了50，有大量内容需要修改回100%触发的可联系维护组
-""".strip()
 
-# TODO: 把帮助分开，不然太长了
+#———————————————————————————————————————
 
 
 CORPUS_IMAGES_PATH = Path(r'.\res')/'images'/'corpus_images'
@@ -196,7 +227,7 @@ class Pagination:
         return self.__str__()
 
 
-qanda = MatcherGroup(type='message', rule=sv_sw('问答对话'))
+qanda = MatcherGroup(type='message', rule=sv_sw('问答对话', plugin_usage))
 
 
 async def reply_checker(bot: Bot, event: MessageEvent, state: T_State) -> bool:
