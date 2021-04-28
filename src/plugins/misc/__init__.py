@@ -17,6 +17,7 @@ async def handle_receive(bot: Bot, event: MessageEvent, state: T_State):
     if args:
         state['msg'] = args
 
+
 @echo.got('msg', prompt="Enter your input content: ")
 async def got_message(bot: Bot, event: MessageEvent, state:T_State):
     msg = event.get_message()
