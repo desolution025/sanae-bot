@@ -342,7 +342,7 @@ async def get_q(bot: Bot, event: MessageEvent, state: T_State):
 @learn.got("answer", '请输入回答，发送[取消]退出本次学习')
 async def get_a(bot: Bot, event: MessageEvent, state: T_State):
     question = state["question"]
-    answer = state["answer"] if "answer" in state else await msg2str(Message(event.raw_message), localize_=True, bot=bot)
+    answer = state["answer"] if "answer" in state else await msg2str(event.message, localize_=True, bot=bot)
     if answer:
         logger.debug(f'Current answer is [{answer}]')
         source = event.group_id if event.message_type == "group" else 0
@@ -445,7 +445,7 @@ async def batch_get_q(bot: Bot, event: MessageEvent, state: T_State):
 
 @batch_learn.got('answer')
 async def batch_get_a(bot: Bot, event: MessageEvent, state: T_State):
-    answer = await msg2str(Message(event.raw_message), localize_=True, bot=bot)
+    answer = await msg2str(event.message, localize_=True, bot=bot)
     if answer:
         state["answer"] = answer
     else:
