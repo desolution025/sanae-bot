@@ -53,7 +53,7 @@ def store_recall(gid: int, fake_id: int, message_id: int, passive: bool, time: i
         recalled[gid] = _tmp_dict
 
 
-recall_trigger = antirecall.on_notice(rule=comman_rule(GroupRecallNoticeEvent))
+recall_trigger = antirecall.on_notice(rule=sv_sw(plugin_name, plugin_usage, hierarchy='其它')&comman_rule(GroupRecallNoticeEvent))
 
 
 @recall_trigger.handle()
@@ -76,7 +76,7 @@ async def got_recall(bot: Bot, event: GroupRecallNoticeEvent):
     await recall_trigger.finish(msg)
 
 
-recorder = antirecall.on_endswith('号记录是什么', rule=comman_rule(GroupMessageEvent))
+recorder = antirecall.on_endswith('号记录是什么', rule=sv_sw(plugin_name, plugin_usage, hierarchy='其它')&comman_rule(GroupMessageEvent))
 
 
 @recorder.handle()

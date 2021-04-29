@@ -123,7 +123,7 @@ def localize(url: str, filename: str, failed_times: int=0) -> Optional[str]:
             return None
 
 
-async def msg2str(message: Message, *, localize_: bool=False, bot: Optional[Bot]=None) -> str:
+def msg2str(message: Message, *, localize_: bool=False) -> str:
     """把Message转换成可供数据库插入和查询用的字符串
 
     对纯文本对emoji去转义，对image去除data中的url参数
@@ -131,7 +131,6 @@ async def msg2str(message: Message, *, localize_: bool=False, bot: Optional[Bot]
     Args:
         message (Message): 可由event.message或event.get_message()获得
         localize_ (bool): 是否要本地化，本地化后file字段加入的是file:///...形式的本地文件格式，一般用在插入数据库中answer中
-        bot (Optional[Bot]): 需要本地化处理图片时传入bot以调用获取图片信息的API
 
     Returns:
         str: 转换后的字符串
@@ -144,9 +143,7 @@ async def msg2str(message: Message, *, localize_: bool=False, bot: Optional[Bot]
         elif seg.type == 'image':
             if not localize_:
                 strcq += f'[CQ:image,file={seg.data["file"]}]'
-            else:  # TODO: 把这个改成同步函数，好tm傻逼啊我
-                # fileinfo = await bot.get_image(file=seg.data["file"])
-                # filename = re.sub(r'[\{\}-]', '', fileinfo["filename"]).lower()  # 返回filename字段是{xxx-xxx-xxx...}.jpg的形式，去掉中括号和横杠
+            else:
                 realname = localize(seg.data["url"], seg.data["file"])
                 if not realname:
                     return None
@@ -240,7 +237,7 @@ qanda = MatcherGroup(type='message', rule=sv_sw('问答对话', plugin_usage))
 
 async def reply_checker(bot: Bot, event: MessageEvent, state: T_State) -> bool:
     """问答对话触发规则"""
-    q = await msg2str(Message(event.raw_message))  # 仅仅使用message会去掉呼唤bot昵称的原文本，造成问句中有bot昵称时逻辑混乱
+    q = msg2str(Message(event.raw_message))  # 仅仅使用message会去掉呼唤bot昵称的原文本，造成问句中有bot昵称时逻辑混乱
     gid = event.group_id if event.message_type == 'group' else 0
     result = query(q, gid)
     if not result:
@@ -310,9 +307,9 @@ async def first_receive(bot: Bot, event: MessageEvent, state: T_State):
             state['question'] = arg
         else:  # 快速学习，但插入记录仍放到对话最后处理
             question, answer = arg.split(' 回答', maxsplit=1)
-            state["question"] = await msg2str(Message(question))
+            state["question"] = msg2str(Message(question))
 
-            answer = await msg2str(Message(answer), localize_=True, bot=bot)
+            answer = msg2str(Message(answer), localize_=True, bot=bot)
             if not answer:
                 await learn.finish(reply_header(event, '这条词语好像记不住耶，要不联系主人试试？'))
             else:
@@ -340,14 +337,14 @@ async def parse_qa(bot: Bot, event: MessageEvent, state: T_State):
 @learn.got("question", '请输入问句，发送[取消]退出本次学习')
 async def get_q(bot: Bot, event: MessageEvent, state: T_State):
     if "question" not in state:
-        state["question"] = await msg2str(Message(event.raw_message))
+        state["question"] = msg2str(Message(event.raw_message))
     logger.debug(f'Current question is [{state["question"]}]')
 
 
 @learn.got("answer", '请输入回答，发送[取消]退出本次学习')
 async def get_a(bot: Bot, event: MessageEvent, state: T_State):
     question = state["question"]
-    answer = state["answer"] if "answer" in state else await msg2str(event.message, localize_=True, bot=bot)
+    answer = state["answer"] if "answer" in state else msg2str(event.message, localize_=True, bot=bot)
     if answer:
         logger.debug(f'Current answer is [{answer}]')
         source = event.group_id if event.message_type == "group" else 0
@@ -364,7 +361,7 @@ async def get_a(bot: Bot, event: MessageEvent, state: T_State):
             msg = f'对话已记录， 赠送您{exp}exp 和 {fund}金币作为谢礼~'
             if state["force_priv"]:
                 msg += "\n(消息中含at信息，将强制设置公开性为群内限定)"
-            msg += "当前对话相对出现率默认设置为70，如需设置出现率可直接输入0-100范围内数字，否则可忽视本条说明"
+            msg += "\n﹟ 当前对话相对出现率默认设置为70，如需设置出现率可直接输入0-100范围内数字，否则可忽视本条说明"
             preprob[event.user_id] = result
             await learn.finish(msg)
     else:
@@ -395,7 +392,7 @@ get_prob = qanda.on_message(rule=get_prob_checker, priority=2)  # 此对话需�
 @get_prob.handle()
 async def set_prob(bot: Bot, event: MessageEvent, state: T_State):
     update_prob(state["sid"], state["prob"])
-    await get_prob.finish(reply_header(event, f'好的，已将刚才学习对话的相对出现率调整为{state["prob"]}'))
+    await get_prob.finish(reply_header(event, f'好的，已将刚才学习对话的相对出现率调整为{state["prob"]}%'))
 
 
 #———————————————批量学习————————————————
@@ -440,7 +437,7 @@ async def parse_batch_qa(bot: Bot, event: MessageEvent, state: T_State):
 
 @batch_learn.got('question', prompt='请输入问句，多个问句可使用“|”分隔，发送退出本次学习')
 async def batch_get_q(bot: Bot, event: MessageEvent, state: T_State):
-    state["question"] = await msg2str(Message(event.raw_message))
+    state["question"] = msg2str(Message(event.raw_message))
     logger.debug(f'Current question is [{state["question"]}]')
     qs = event.raw_message.split("|")
     qs_i = [f'{i + 1}.{q}' for i, q in enumerate(qs)]
@@ -450,7 +447,7 @@ async def batch_get_q(bot: Bot, event: MessageEvent, state: T_State):
 
 @batch_learn.got('answer')
 async def batch_get_a(bot: Bot, event: MessageEvent, state: T_State):
-    answer = await msg2str(event.message, localize_=True, bot=bot)
+    answer = msg2str(event.message, localize_=True, bot=bot)
     if answer:
         state["answer"] = answer
     else:
@@ -509,14 +506,14 @@ query_record = qanda.on_command('查询', aliases= {'查询对话', '搜索对�
 
 @query_record.handle()
 async def recieve_query(bot: Bot, event: MessageEvent, state: T_State):
-    arg = await msg2str(event.message)
+    arg = msg2str(event.message)
     if arg:
         state["question"] = arg
 
 
 @query_record.got('question', prompt='请输入要查询的问句')
 async def handle_query(bot: Bot, event: MessageEvent, state: T_State):
-    question = state["question"] if 'question' in state else await msg2str(event.message)
+    question = state["question"] if 'question' in state else msg2str(event.message)
     gid = event.group_id if event.message_type == 'group' else 0
     result = query(question, gid, q=True)
 
