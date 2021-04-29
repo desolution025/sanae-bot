@@ -29,6 +29,7 @@ async def check_fortune(bot: Bot, event: MessageEvent):
         draw_fortune(event.user_id, stick.name)
         dlmt.increase()
     else:
+        dlmt.conn.close()
         stick = assets_folder/stick
     logger.debug(f'{event.user_id} got stick {stick.name}')
     await fortune.finish(f'{name}今日的运势是' + imgseg(stick), at_sender=True)
