@@ -122,7 +122,7 @@ sl说明：
     if r18_call:
         r18 = 1 if r18_call in ('r18', 'R18') else 0      
     else:
-        r18 = 0 if max_sl < 5 else 2
+        r18 = 0 if event.message_type == 'group' and max_sl < 5 else 2
 
     # 链接API，5次错误退出并反馈错误
     logger.debug('Start getting lolicon API')

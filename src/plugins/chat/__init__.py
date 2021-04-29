@@ -59,7 +59,7 @@ async def prob_handle(bot: Bot, event: GroupMessageEvent, state: T_State):
     try:
         record_settings(str(event.group_id), prob / 100)
         await set_prob.finish(reply_header(event, f'好的，{BOTNAME}最多只有{prob}%的几率插嘴啦~'))
-    except Exception as err:
+    except IOError as err:
         logger.error(f'Record ai chat probability error: {err}')
         await set_prob.finish(reply_header(event, f'{BOTNAME}突然遭遇了不明袭击，没有记录下来，请尽快联系维护组修好我T_T'))
 
@@ -73,13 +73,17 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
     msg = event.message.extract_plain_text()
     if not msg or len(msg) > 50:
         return False
+    # 回复别人的对话不会触发
+    for seg in event.message:
+        if seg.type in ('reply', 'at') and seg.data["qq"] not in (event.self_id, 'all'):
+            return False
     if event.message_type == 'group' and not event.is_tome():
         for name in BOTNAMES:
             if name in msg:
                 state['q'] = msg.replace(name, '你')
                 return True  # 内容里有bot名字的话会默认触发
         gid = str(event.group_id)
-        prob = prob_settings[gid] if gid in prob_settings else 0.1
+        prob = prob_settings[gid] if gid in prob_settings else 0.05  # 默认触发率5%
         if random() > prob:
             return False
         else:

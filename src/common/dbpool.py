@@ -102,12 +102,13 @@ class MysqlPool:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
-            if self.q is False:
-                self.commit()
-            self.close()
-        else:
+        if exc_type is None and not self.q:
+            self.commit()
+        elif exc_type is not None:
+            if not self.q:
+                self.rollback()
             logger.error(f'EXCType: {exc_type}; EXCValue: {exc_val}; EXCTraceback: {exc_tb}')
+        self.close()
 
 
 class QbotDB(MysqlPool):

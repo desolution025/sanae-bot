@@ -521,7 +521,7 @@ async def handle_query(bot: Bot, event: MessageEvent, state: T_State):
     result = query(question, gid, q=True)
 
     if not result:
-        await query_record.finish(Message(f'没找到关于 ').append(event.message).append(Message(' 的对话')))
+        await query_record.finish(Message(f'没找到关于 ') + (event.message) + (Message(' 的对话')))
     
     Record = namedtuple('Record', ['sid', 'answer', 'probability', 'creator', 'source', 'creation_time', 'public'])
     result = map(lambda x: Record(*x), result)

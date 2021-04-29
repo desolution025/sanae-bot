@@ -173,7 +173,7 @@ class DailyNumberLimiter:
             func_name (str): 服务名
             max_num (int): 最大调用次数
         """
-        self.conn = QbotDB()
+        self.conn = QbotDB()  # 注意没有使用上下文管理，要手动commit()
 
         # 如果没有func_name列增加三个相关列
         if func_name not in self.__class__.func_name_ls:
@@ -182,6 +182,7 @@ class DailyNumberLimiter:
             self.conn.update(f"ALTER TABLE calltimes  ADD {func_name}_day DATE, ADD {func_name}_count INT DEFAULT 0, ADD {func_name}_total INT DEFAULT 0;")
             self.conn.update(f"UPDATE calltimes SET {func_name}_day = CURDATE();")
             logger.info(f'Add func_name: {func_name} to table calltimes')
+            self.conn.commit()
 
         result = self.conn.queryone(
             f'select {func_name}_day, {func_name}_count, {func_name}_total from calltimes where qq_number=%s;',
@@ -197,6 +198,7 @@ class DailyNumberLimiter:
                 "VALUES(%s, CURDATE(), 0, 0)",
                 (uid,)
                 )
+            self.conn.commit()
             self.last_call, self.count, self.total = date.today(), 0, 0
 
         self.uid = uid
