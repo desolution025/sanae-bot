@@ -10,7 +10,7 @@ plugin_name = '群广播'
 broadcast = on_command('broadcast', aliases={'bc', '广播', '通知群'}, permission=SUPERUSER)
 
 
-@broadcast.handle
+@broadcast.handle()
 async def first_receive(bot: Bot, event: MessageEvent, state: T_State):
     msg = event.message
     if msg:
@@ -57,4 +57,4 @@ async def send_notice(bot: Bot, event: MessageEvent, state: T_State):
             logger.error(f'Faild to send broadcast with error: {err}')
             await broadcast.finish(f'广播投递失败')
 
-    await broadcast.finish(f'已将广播发送给{len(gid_ls)}个群')
+    await broadcast.finish(f'已将广播发送给{len(target_grps)}个群')
