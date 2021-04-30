@@ -142,12 +142,22 @@ def insertmany(question: Sequence[str], answer: Sequence[str], probability: int,
     Returns:
         Union[int, List[Tuple[str, str, int, datetime]]]: 成功则返回插入的数量，有重复的则返回重复的数据
     """
+
+    if len(question) == 1:
+        questions = f'("{question[0]}")'
+    else:
+        questions = tuple(question)
+    if len(answer) == 1:
+        answers = f'("{answer[0]}")'
+    else:
+        answers = tuple(answer)
+
     with QbotDB() as qb:
         if public == 1:
-            querycmd = f'SELECT question, answer, creator, creation_time FROM corpus WHERE question in {tuple(question)} AND answer in {tuple(answer)} AND public=1 LIMIT 1;'
+            querycmd = f'SELECT question, answer, creator, creation_time FROM corpus WHERE question in {questions} AND answer in {answers} AND public=1;'
             queryparam = ()
         else:
-            querycmd = f'SELECT question, answer creator, creation_time FROM corpus WHERE question in {tuple(question)} AND answer in {tuple(answer)} AND public=0 AND source=%s LIMIT 1;'
+            querycmd = f'SELECT question, answer creator, creation_time FROM corpus WHERE question in {questions} AND answer in {answers} AND public=0 AND source=%s;'
             queryparam = (source,)
         result = qb.queryall(querycmd, queryparam)
         if result:
@@ -159,7 +169,7 @@ def insertmany(question: Sequence[str], answer: Sequence[str], probability: int,
         # 返回最后插入的最小id和最大id
         last = qb.queryone('SELECT LAST_INSERT_ID();')
         # return last[0][0], len(question) * len(answer) + last[0][0]
-        return len(question) * len(answer)  # 返回插入的数量，如果有需求对最后插入的数据做处理再用上面那个
+    return len(question) * len(answer)  # 返回插入的数量，如果有需求对最后插入的数据做处理再用上面那个
 
     
 def update_prob(sid: Union[int, Tuple[int, int]], prob: int):

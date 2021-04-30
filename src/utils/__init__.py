@@ -191,9 +191,11 @@ class DailyNumberLimiter:
 
         if result:
             self.last_call, self.count, self.total = result
+            # 可能之前是调用其他功能时自动创建的记录所以当前功能的最后调用时间是null
             if self.last_call is None:
                 self.conn.update(f"UPDATE calltimes SET {func_name}_day = CURDATE() WHERE qq_number=%s;", (uid,))
                 self.conn.commit()
+                self.last_call = date.today()
         else:
             # 如果没有用户记录在相关列上增加用户记录并设置为初始值
             self.conn.insert(

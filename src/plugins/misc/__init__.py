@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from nonebot import on_command
+from nonebot.permission import SUPERUSER
 from nonebot.adapters.cqhttp.message import Message
 from nonebot.adapters.cqhttp.utils import unescape
 from nonebot import load_plugins
@@ -8,7 +9,7 @@ from nonebot import load_plugins
 from src.common import Bot, MessageEvent, T_State
 
 
-echo = on_command('echo')
+echo = on_command('echo', permission=SUPERUSER)
 
 
 @echo.handle()
