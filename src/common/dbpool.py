@@ -3,7 +3,9 @@ import configparser
 from pydantic import BaseModel
 
 # from ipaddress import IPv4Address
-from  mysql.connector import pooling, Error
+import mysql.connector
+from dbutils.pooled_db import PooledDB
+
 try:
     from src.common.log import logger
 except ImportError:
@@ -34,44 +36,56 @@ class MysqlPool:
     :Args:
     
         ``db``: 要使用哪个数据库
-        ``**kw``: 其他参数需要传输数据库配置信息及连接池配置信息
+        ``**kw``: 其他参数需要传输数据库配置信息
     """
-    # 连接池名字对应连接池实例的字典
+    # 连接池对象
     _pool = None
-    def __init__(self, db: str, **kw) -> None:
+
+    def __init__(self, db: str, **kw):
         if self.__class__._pool is None:
-            self.__class__._pool = pooling.MySQLConnectionPool(db=db, **kw)
-        self._conn = self.__class__._pool.get_connection()
-        self.cursor = self._conn.cursor()
-        self.q = True  # 查询模式，用来更新数据时自动调用commit
+            self.__class__._pool = PooledDB(mysql.connector,
+                                            mincached=1,
+                                            maxcached=5,
+                                            maxshared=10,
+                                            maxconnections=10,
+                                            blocking=True,
+                                            maxusage=100,
+                                            setsession=None,
+                                            reset=True,
+                                            **kw,
+                                            db=db,
+                                            charset="utf8mb4")
+        self._conn = self.__class__._pool.connection()
+        self._cursor = self._conn.cursor()
+        self.q = True # 查询模式，用于自动在上下文管理中判断是否需要执行commit
 
     def _execute(self, cmd, param=()):
         try:
-            self.cursor.execute(cmd, param)
-        except Error as e:
-            logger.exception(e)
+            self._cursor.execute(cmd, param)
+        except mysql.connector.Error as err:
+            logger.exception(err)
 
     def queryall(self, cmd, param=()):
         self._execute(cmd, param)
-        return self.cursor.fetchall()
-    
+        return self._cursor.fetchall()
+
     def queryone(self, cmd, param=()):
         """
         ※除非能确定返回值只有一项否则调用此方法时命令要增加limit 1条件不然会触发Unread result found异常
         """
         self._execute(cmd, param)
-        return self.cursor.fetchone()
+        return self._cursor.fetchone()
 
     def querymany(self, cmd, num, param=()):
         self._execute(cmd, param)
-        return self.cursor.fetchmany(num)
+        return self._cursor.fetchmany(num)
 
     def insert(self, cmd, param=()):
         self._execute(cmd, param)
         self.q = False
 
     def insertmany(self, cmd, values):
-        self.cursor.executemany(cmd, values)
+        self._cursor.executemany(cmd, values)
         self.q = False
 
     def update(self, cmd, param=()):
@@ -86,6 +100,7 @@ class MysqlPool:
         """
         @summary: 开启事务
         """
+        # self._conn.autocommit(0)
         self._conn.begin()
 
     def commit(self):
@@ -95,28 +110,30 @@ class MysqlPool:
         self._conn.rollback()
 
     def close(self):
-        self.cursor.close()
-        self._conn.close()
-    
+        try:
+            self._cursor.close()
+            self._conn.close()
+        except mysql.connector.Error as err:
+            logger.exception(err)
+
     def __enter__(self):
         return self
-
+    
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None and not self.q:
-            self.commit()
-        elif exc_type is not None:
-            if not self.q:
-                self.rollback()
+        if exc_type is None:
+            if self.q is False:
+                self.commit()
+            self.close()
+        else:
             logger.error(f'EXCType: {exc_type}; EXCValue: {exc_val}; EXCTraceback: {exc_tb}')
-        self.close()
 
 
 class QbotDB(MysqlPool):
     """
-    qbotdb连接池，lable: userinfo, corpus
+    qbotdb连接池，lable: userinfo, corpus, calltimes
     """
     def __init__(self,) -> None:
-        super().__init__('qbotdb', pool_name='qbotdb', **dbcfg.dict())
+        super().__init__('qbotdb', **dbcfg.dict())
 
 
 class GalleryDB(MysqlPool):
@@ -124,13 +141,13 @@ class GalleryDB(MysqlPool):
     美图图库连接池，lable: gallery
     """
     def __init__(self,) -> None:
-        super().__init__('gallery', pool_name='gallery', **dbcfg.dict())
+        super().__init__('gallery', **dbcfg.dict())
 
 
 if __name__ == "__main__":
     # print(dbcfg.json())
     # print(dbcfg.dict())
     with QbotDB() as qb:
-        result = qb.queryall('select * from corpus where ID>2000')
-        # result = qb.queryone('select * from userinfo limit 2')
+        result = qb.queryall('SELECT * FROM userinfo LIMIT 10;')
+        # result = qb.queryone('select * from userinfo limit 1')
         print(result)
