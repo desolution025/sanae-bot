@@ -40,7 +40,7 @@ async def confirm_group(bot: Bot, event: MessageEvent, state: T_State):
     #     await exit_manager.finish('获取群{gid}信息失败，请检查群号是否正确')
     g_ls = await bot.get_group_list()
     gid_ls = [g["group_id"] for g in g_ls]
-    grpinfo_ls = '\n'.join([f'{i}.{g["group_name"]}|群号[{g["group_id"]}]' for i, g in enumerate(g_ls)])  # 群文字列表
+    grpinfo_ls = '\n'.join([f'{i}.{g["group_name"]} | 群号[{g["group_id"]}]' for i, g in enumerate(g_ls)])  # 群文字列表
     if gid not in gid_ls:
         await exit_manager.finish(f'群不在列表中，当前已加入群的列表为：\n' + grpinfo_ls)
     else:
