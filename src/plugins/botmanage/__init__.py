@@ -45,7 +45,7 @@ async def authorize(bot: Bot, event: PrivateMessageEvent, state: T_State):
 async def global_switch_filter(mathcer: Matcher, bot: Bot, event: Event, state:T_State):
     if isinstance(event, (MessageEvent, NoticeEvent)) and hasattr(event, 'group_id') and\
         (not Enable_Group(event.group_id).check_enable() or not Group_Blocker(event.group_id).check_block() and\
-        not (event.get_message().extract_plain_text() in ('on', '启动', 'ON') and event.is_tome())):
+        not (isinstance(event, MessageEvent) and event.get_message().extract_plain_text() in ('on', '启动', 'ON') and event.is_tome())):
 
         raise IgnoredException('该群已在全局关闭服务')
 

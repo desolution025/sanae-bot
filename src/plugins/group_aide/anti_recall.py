@@ -3,7 +3,6 @@ from collections import defaultdict
 from datetime import datetime
 
 from nonebot import MatcherGroup
-from nonebot.plugin import on_notice
 from nonebot.adapters.cqhttp.event import GroupRecallNoticeEvent
 from nonebot.adapters.cqhttp.exception import ActionFailed
 
@@ -16,7 +15,7 @@ plugin_name = '防撤回'
 plugin_usage = '[N号记录是什么] N换成撤回时返回的记录号则会返回被撤回的内容，注意不要带标点\n※※不喜欢的话使用关闭功能开关就好'
 
 
-antirecall = MatcherGroup(rule=sv_sw(plugin_name, plugin_usage, hierarchy='其它'))
+antirecall = MatcherGroup(rule=sv_sw(plugin_name, plugin_usage, hierarchy='群助手'))
 
 
 ta_map = {'male':'他', 'female':'她','unknown':'它'}
