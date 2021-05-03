@@ -3,9 +3,10 @@ from functools import wraps
 from typing import Callable
 from inspect import signature
 
+from nonebot.matcher import Matcher
 from nonebot.adapters.cqhttp.bot import Bot
 from nonebot.adapters.cqhttp.event import MessageEvent
-from nonebot.typing import T_State
+from nonebot.typing import T_Handler, T_State
 
 from src.utils import reply_header, FreqLimiter, DailyNumberLimiter
 from .dbpool import QbotDB
@@ -205,11 +206,11 @@ class FuncLimiter:
             overdraft (str, optional): 超额提醒语句. Defaults to '你的资金剩余为{left_fund}金币'.
             only_group (bool, optional): True则不会在私聊中进行任何限制. Defaults to True.
         """
-        def deco(func: Callable):
+        def deco(func: T_Handler):
             @wraps(func)
-            async def wrapper(bot: Bot, event: MessageEvent, state: T_State):
+            async def wrapper(bot: Bot, event: MessageEvent, state: T_State, matcher: Matcher):
                 # 只在群内检测，检测顺序为频率>每日限制>资金
-                # logger.debug('开始检测')
+                logger.debug('开始检测')
                 if not (self.only_group is True and event.message_type == 'private'):
                     uid = event.user_id
 
@@ -217,38 +218,28 @@ class FuncLimiter:
                     if not flmt.check():
                         left_time = flmt.left_time()
                         msg = cding.format(left_time=round(left_time))
-                        await bot.send(event, reply_header(event, msg))
-                        return
+                        await matcher.finish(reply_header(event, msg))
+                    logger.debug('频率检测通过')
 
+                    nlmt = DailyNumberLimiter(uid, self.func_name, self.max_free)
+                    in_free = nlmt.check()
                     if self.max_limit:
                         if self.max_free == 0:
-                            await bot.send(event, reply_header(event, '此功能关闭中...'))
-                            return
-                        nlmt = DailyNumberLimiter(uid, self.func_name, self.max_free)
-                        if not nlmt.check():
-                            await bot.send(event, reply_header(event, out_max))
-                            return
+                            await matcher.finish(reply_header(event, '此功能关闭中...'))
+                        if not in_free:
+                            await matcher.finish(reply_header(event, out_max))
+                    logger.debug('每日调用限制检测通过')
 
-                    if self.cost:
+                    if self.cost and not in_free:
                         userinfo = UserLevel(uid)
                         if userinfo.fund < self.cost:
                             refuse_msg = overdraft.format(left_fund = userinfo.fund)
                             if userinfo.level == 0:
                                 refuse_msg += '，先[签到]领取资金吧'
-                            await bot.send(event, reply_header(event, refuse_msg))
-                            return
+                            await matcher.finish(reply_header(event, refuse_msg))
+                    logger.debug('资金检测通过')
 
-                # 解析handler参数并在调用时赋予真实参数
-                params = signature(func)
-                _bot = params.parameters.get('bot')
-                _event = params.parameters.get('event')
-                _state = params.parameters.get('state')
-                args = []
-                for i, param in enumerate([_bot, _event, _state]):
-                    if param:
-                        args.append([bot, event, state][i])
-
-                return await func(*args)
+                return await self.call_source(func, bot, event, state, matcher)
 
             return wrapper
         return deco
@@ -262,10 +253,11 @@ class FuncLimiter:
             branch (str, optional): 完整执行了命令的分支返回的标识字符串(其实不用字符串也行). Defaults to 'completed'.
         """
 
-        def deco(func: Callable):
+        def deco(func: T_Handler):
             @wraps(func)
-            async def wrapper(bot:Bot, event: MessageEvent, state: T_State):
-                result = await func(bot, event, state)
+            async def wrapper(bot:Bot, event: MessageEvent, state: T_State, matcher: Matcher):
+                result = await self.call_source(func, bot, event, state, matcher)
+
                 logger.debug(f'{func.__name__}返回结果: {result}')
                 # 执行完命令获得返回值，如果是'completed'代表完整执行了命令，此时扣除资金并开始冷却
                 if not (self.only_group is True and event.message_type == 'private') and result == branch:
@@ -286,6 +278,20 @@ class FuncLimiter:
                 
             return wrapper
         return deco
+
+    async def call_source(self, func: T_Handler, bot: Bot, event: MessageEvent, state: T_State, matcher: Matcher):
+        """解析handler参数并赋予真实参数调用"""
+
+        params = signature(func)
+        _bot = params.parameters.get('bot')
+        _event = params.parameters.get('event')
+        _state = params.parameters.get('state')
+        _matcher = params.parameters.get('matcher')
+        args = []
+        for i, param in enumerate([_bot, _event, _state, _matcher]):
+            if param:
+                args.append([bot, event, state, matcher][i])
+        return await func(*args)
 
 
 if __name__ == "__main__":
