@@ -58,10 +58,23 @@ async def prob_handle(bot: Bot, event: GroupMessageEvent, state: T_State):
         await set_prob.finish(reply_header(event, '范围错误，聊天触发率仅支持设置为0-50内'))
     try:
         record_settings(str(event.group_id), prob / 100)
-        await set_prob.finish(reply_header(event, f'好的，{BOTNAME}最多只有{prob}%的几率插嘴啦~'))
+        if prob > 0:
+            msg = f'好的，{BOTNAME}最多只有{prob}%的几率插嘴啦~'
+        else:
+            msg = f'好的，{BOTNAME}不会插嘴啦~'
+        await set_prob.finish(reply_header(event, msg))
     except IOError as err:
         logger.error(f'Record ai chat probability error: {err}')
         await set_prob.finish(reply_header(event, f'{BOTNAME}突然遭遇了不明袭击，没有记录下来，请尽快联系维护组修好我T_T'))
+
+
+# 在这个里面的就不要触发了
+BAN_EXPRESSION = ('姑姑请求场外支援呀',
+                '这个…我真的听不懂',
+                '尽管看不懂，但姑姑能够理解你此刻复杂的心情~',
+                '哈哈哈，看不懂',
+                '你好， 我是腾讯小龙女，请把你的问题告诉我吧',
+                '不明白你的意思，我们还是聊聊今天的新闻吧')
 
 
 def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
@@ -87,14 +100,21 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
         if random() > prob:
             return False
         else:
-            reply, confidence = ai_chat(msg)
+            ai_reply = ai_chat(msg)
+            if ai_reply is None:
+                logger.error(f'Failed to get tencent AI chat!') # 内部错误时返回的的是None
+                return False
+            else:
+                reply, confidence = ai_chat(msg)
+                if reply in BAN_EXPRESSION:
+                    return False
             logger.debug(f'{msg} 获得触发率 {confidence:.5f}')
             if random() > confidence:
                 return False
             else:
                 state["reply"] = reply
     return True
-        
+
 
 chat = chatbot.on_message(rule=chat_checker, priority=4)
 
@@ -107,4 +127,4 @@ async def talk(bot: Bot, event: MessageEvent, state: T_State):
     else:
         reply = state["reply"]
 
-    await chat.finish(reply)
+    await chat.finish(reply.replace('腾讯', '幻想乡'))
