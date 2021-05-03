@@ -117,7 +117,7 @@ async def check_pic(bot: Bot, event: MessageEvent, state: T_State) -> bool:
     return False
 
 
-easy_pick = MatcherGroup(type='message', rule=sv_sw('搜图')&comman_rule(GroupMessageEvent)&check_pic, priority=2)
+easy_pick = MatcherGroup(type='message', rule=sv_sw('搜图')&comman_rule(GroupMessageEvent)&check_pic, block=False, priority=2)
 
 
 notice_pic =easy_pick.on_message()

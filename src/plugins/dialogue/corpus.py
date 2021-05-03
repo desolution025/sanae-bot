@@ -189,7 +189,7 @@ def update_prob(sid: Union[int, Tuple[int, int]], prob: int):
             min_, max_ = sid
             qb.update(f'UPDATE corpus SET probability=%s WHERE id BETWEEN %s AND %s;', (prob, min_, max_))
 
-    
+
 def del_record(sid: int):
     """删除记录"""
     with QbotDB() as qb:

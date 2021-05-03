@@ -54,7 +54,7 @@ class MysqlPool:
                                             reset=True,
                                             **kw,
                                             db=db,
-                                            charset="utf8mb4")
+                                            charset="utf8")  #TODO: 有个不明所以的utf8mb4编码错误
         self._conn = self.__class__._pool.connection()
         self._cursor = self._conn.cursor()
         self.q = True # 查询模式，用于自动在上下文管理中判断是否需要执行commit
