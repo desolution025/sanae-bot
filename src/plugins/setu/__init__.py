@@ -10,7 +10,7 @@ from PIL import UnidentifiedImageError
 from cn2an import cn2an
 from nonebot import on_regex, on_keyword
 from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import MessageEvent
+from nonebot.adapters.cqhttp.event import MessageEvent, PrivateMessageEvent
 from nonebot.typing import T_State
 from nonebot.adapters.cqhttp.message import MessageSegment
 from nonebot.adapters.cqhttp.exception import NetworkError, CQHTTPAdapterException
@@ -59,6 +59,7 @@ sl说明：
 中间的等级依次过渡''')
 
         max_sl = sl_settings[str(gid)]['max_sl']
+        min_sl = sl_settings[str(gid)]['min_sl']
         restricted = True if max_sl < 5 else False  # r18是否在本群受限
     else:
         restricted = False
@@ -105,7 +106,8 @@ sl说明：
     # 资金限制条款，注册了每日次数限制器
     cost = num * 3 + 2
     dlmt = DailyNumberLimiter(uid, '色图', 3)
-    in_free = dlmt.check(close_conn=False)
+    in_free = True if event.message_type == 'private' and event.sub_type == 'friend'\
+            else dlmt.check(close_conn=False)  # 来自好友的对话不消耗金币
 
     if userinfo.fund < cost and not in_free:
         if userinfo.fund > 0:
@@ -122,7 +124,15 @@ sl说明：
     if r18_call:
         r18 = 1 if r18_call in ('r18', 'R18') else 0      
     else:
-        r18 = 0 if event.message_type == 'group' and max_sl < 5 else 2
+        if event.message_type == 'group':
+            if max_sl < 5:
+                r18 = 0
+            elif min_sl == 5:
+                r18 = 1
+            elif min_sl < 5:
+                r18 = 2
+        else:
+            r18 = 2
 
     # 链接API，5次错误退出并反馈错误
     logger.debug('Start getting lolicon API')
@@ -227,7 +237,7 @@ sl说明：
 
         if miss_count < result['count']:
             if not in_free:
-                cost = (result['count'] - miss_count) * 3 + 2  # 返回数量可能少于调用量，并且要减去miss的数量
+                cost = (result['count'] - miss_count) * 3  # 返回数量可能少于调用量，并且要减去miss的数量
                 userinfo.turnover(-cost)  # 如果超过每天三次的免费次数则扣除相应资金
             dlmt.increase()  # 调用量加一
         else:
