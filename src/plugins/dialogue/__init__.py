@@ -344,7 +344,7 @@ async def parse_qa(bot: Bot, event: MessageEvent, state: T_State):
                 logger.info('User is setting at botself, cancel learning')  # 检测一下type
             # 强制非公开
             if state["public"]:
-                state["force_priv"] == True
+                state["force_priv"] = True
                 logger.info('Got at info, force set public to 0')
 
 
@@ -363,6 +363,7 @@ async def get_a(bot: Bot, event: MessageEvent, state: T_State):
         logger.debug(f'Current answer is [{answer}]')
         source = event.group_id if event.message_type == "group" else 0
         public = 0 if state["force_priv"] else state["public"]
+        logger.info(f'Insert record to corpus :\nquestion:[{question}]\nanswer:[{answer}]\npublic:{public}\ncreator:{event.get_user_id()}\nsource:{source}')
         result = insertone(question, answer, 70, event.user_id, source, public)
         if isinstance(result, tuple):
             await learn.finish(f'记录已被用户{result[0]}在{result[1]}时创建')
@@ -531,11 +532,6 @@ async def recieve_query(bot: Bot, event: MessageEvent, state: T_State):
         state["question"] = arg
 
 
-@query_record.args_parser
-async def pass_got(bot: Bot, event: MessageEvent, state: T_State):
-    pass
-
-
 @query_record.got('question', prompt='请输入要查询的问句')
 async def handle_query(bot: Bot, event: MessageEvent, state: T_State):
     question = state["question"] if 'question' in state else await msg2str(Message(event.raw_message))
@@ -544,7 +540,7 @@ async def handle_query(bot: Bot, event: MessageEvent, state: T_State):
     result = query(question, gid, q=True)
 
     if not result:
-        await query_record.finish(Message(f'没找到关于 ') + Message(event.raw_message) + (Message(' 的对话')))
+        await query_record.finish(Message(f'没找到关于 ') + Message(question) + (Message(' 的对话')))
     
     Record = namedtuple('Record', ['sid', 'answer', 'probability', 'creator', 'source', 'creation_time', 'public'])
     result = map(lambda x: Record(*x), result)
