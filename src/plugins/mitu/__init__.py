@@ -62,41 +62,24 @@ set_sl = sl.on_command('设置sl', aliases={'设置SL', '设置Sl'})
 
 
 @set_sl.handle()
-async def first_receive(bot: Bot, event: GroupMessageEvent, state: T_State):
+async def setsl_(bot: Bot, event: GroupMessageEvent, state: T_State):
     gid = str(event.group_id)
     locked = sl_settings[gid]['locked'] if gid in sl_settings else lock_map[event.sender.role]
     if locked > lock_map[event.sender.role]:
         await set_sl.finish(reply_header(event, f'sl被{lock_inv_map[locked]}锁定，低于此权限不可设置sl，或先以高级权限[解锁sl]重置锁定权限'))
     args = event.get_plaintext().strip()
-    if args:
-        state['input'] = args
-    state['err_times'] = 0  # 错误次数，错5次就强制中断对话
-
-
-@set_sl.got('input', prompt='请输入本群sl等级范围，如：0-4\n(最小0， 最大5)')
-async def parse_sl(bot: Bot, event: GroupMessageEvent, state: T_State):
-    parse = state['input'].split('-')
-    # 下面这个判断输入区间
+    if not args:
+        await set_sl.finish('请输入本群sl等级范围，如：设置sl 0-4\n(最小0， 最大5)\n※注意是范围！几到几，不是单纯一个数字！')
+    parse =args.split('-')
     if  len(parse) == 2 and parse[0].isdigit() and parse[1].isdigit():
         min_sl = int(parse[0])
         max_sl = int(parse[1])
         if min_sl < 0 or min_sl > 5 or max_sl < 0 or max_sl > 5:
-            state['err_times'] += 1
-            msg = '设置的数字必须在0~5区间'
-            if state['err_times'] < 5:
-                msg += '，请重新输入'
-                await set_sl.reject(reply_header(event, msg))
-            else:
-                msg += '，你怎么总是出错，这智商放弃自行车吧'
-                await set_sl.finish(reply_header(event, msg))
+            await set_sl.finish(reply_header(event, '设置的数字必须在0~5区间'))
         if min_sl > max_sl:
             min_sl, max_sl = max_sl, min_sl
     else:
-        state['err_times'] += 1
-        if state['err_times'] < 5:
-            await set_sl.reject(reply_header(event, '不符合格式的设置，比如：0-4'))
-        else:
-            await set_sl.finish(reply_header(event, '，你怎么总是出错，这智商快告别手表吧'))
+        await set_sl.finish(reply_header(event, '不符合格式的设置，比如：设置sl 0-4'))
 
     gid = str(event.group_id)
     sl_settings[gid]['min_sl'] = min_sl
@@ -159,6 +142,8 @@ query_sl = sl.on_command('查询sl', aliases={'查询SL', '查询Sl', '本群sl'
 @query_sl.handle()
 async def report_sl(bot: Bot, event: GroupMessageEvent):
     gid = str(event.group_id)
+    if gid not in sl_settings:
+        await query_sl.finish('本群未设置sl')
     min_sl = sl_settings[gid]['min_sl']
     max_sl = sl_settings[gid]['max_sl']
     locked = sl_settings[gid]['locked']
@@ -302,7 +287,7 @@ sl说明：
 
     if miss_count < len(result):
         if not in_free:
-            cost = (len(result) - miss_count) * 3 + 2  # 返回数量可能少于调用量，并且要减去miss的数量
+            cost = (len(result) - miss_count) * 3  # 返回数量可能少于调用量，并且要减去miss的数量
             userinfo.turnover(-cost)  # 如果超过每天三次的免费次数则扣除相应资金
         dlmt.increase()  # 调用量加一
     else:
