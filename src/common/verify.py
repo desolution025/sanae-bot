@@ -56,7 +56,7 @@ class Blocker:
             if block_ls[self.id]['reason'] != 2:
                 return False
             else:
-                add_time = datetime.strptime(block_ls[id]['add_time'], "%Y-%m-%d %H:%M:%S")
+                add_time = datetime.strptime(block_ls[self.id]['add_time'], "%Y-%m-%d %H:%M:%S")
                 if datetime.now() - add_time < timedelta(hours=6):
                     return False
                 else:
