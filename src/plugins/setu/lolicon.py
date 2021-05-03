@@ -6,7 +6,7 @@ import httpx
 cfg = ConfigParser()
 cfg.read(Path(__file__).parent/"setu_config.ini")
 API = 'https://api.lolicon.app/setu/'
-APIKEY = dict(cfg.items('keys'))['key2']
+APIKEY = dict(cfg.items('keys'))['key1']
 
 
 async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) -> dict:
