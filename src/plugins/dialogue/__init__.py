@@ -712,7 +712,7 @@ async def fake_del_handle(bot: Bot, event: MessageEvent, state: T_State):
         del_record(sid)
         await delete_record.finish(reply_header(event, f'已删除对话{sid}'))
     else:  # 虚假的删除
-        event.message = Message(f'修改分辨率 -{sid} -0')
+        event.message = Message(f'修改出现率 -{sid} -0')
         await handle_event(bot, event)
 
 

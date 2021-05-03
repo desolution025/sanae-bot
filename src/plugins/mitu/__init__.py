@@ -65,7 +65,7 @@ set_sl = sl.on_command('设置sl', aliases={'设置SL', '设置Sl'})
 async def setsl_(bot: Bot, event: GroupMessageEvent, state: T_State):
     gid = str(event.group_id)
     locked = sl_settings[gid]['locked'] if gid in sl_settings else lock_map[event.sender.role]
-    if locked > lock_map[event.sender.role]:
+    if locked > lock_map[event.sender.role] and event.user_id not in SUPERUSERS:
         await set_sl.finish(reply_header(event, f'sl被{lock_inv_map[locked]}锁定，低于此权限不可设置sl，或先以高级权限[解锁sl]重置锁定权限'))
     args = event.get_plaintext().strip()
     if not args:

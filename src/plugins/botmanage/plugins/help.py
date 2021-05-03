@@ -88,4 +88,4 @@ about_bot = on_message(rule=full_match("关于Sanae-Bot"))
 @about_bot.handle()
 async def show_info(bot: Bot):
     # TODO: 完善信息
-    await about_bot.finish(link_res('sanae-bot.gif') + 'version-0.1.0\n本群授权时间：<>\n本群授权期至：<>\n您的好友申请码：<>')
+    await about_bot.finish(link_res('sanae-bot.gif') + '\nversion-0.1.2\n本群授权时间：<>\n本群授权期至：<>\n您的好友申请码：<>')

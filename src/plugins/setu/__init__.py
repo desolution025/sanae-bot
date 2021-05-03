@@ -29,7 +29,7 @@ from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 plugin_name = '色图'
 plugin_usage = """别TM搜什么孙笑川色图，诸葛亮色图了，淦
 ———————
-设置sl只有是否最大5级才对这个有用，以下等级可以忽略
+设置sl只最大最小是否5级才对这个有用，以下等级可以忽略
 """.strip()
 
 
