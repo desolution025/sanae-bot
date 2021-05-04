@@ -1,13 +1,15 @@
 from nonebot.plugin import on_notice
-from nonebot.adapters.cqhttp.event import GroupBanNoticeEvent
-# from nonebot_adapter_gocq.event import GroupBanNoticeEvent
-from src.common import T_State, BOTNAME, Bot
+try:
+    from nonebot.adapters.cqhttp.event import GroupBanNoticeEvent
+except:
+    from nonebot_adapter_gocq.event import GroupBanNoticeEvent
+from src.common import T_State, BOTNAME
 from src.common.rules import sv_sw, comman_rule
-# from nonebot_adapter_gocq.bot import Bot
+from nonebot_adapter_gocq.bot import Bot
 
 
 async def didiban(bot: Bot, event: GroupBanNoticeEvent, state: T_State):
-    selfinfo = await bot.get_group_member_info(group_id=event.group_id)
+    selfinfo = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
     if selfinfo["role"] == "admin" and event.group_id == 973573381 and event.operator_id == 3548597378:
         state["uid"] = event.user_id
         return True
