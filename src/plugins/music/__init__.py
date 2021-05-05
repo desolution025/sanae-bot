@@ -2,7 +2,7 @@ import re
 from cn2an import cn2an
 
 from nonebot import on_command
-from nonebot.adapters.cqhttp.exception import ActionFailed
+from nonebot_adapter_gocq.exception import ActionFailed
 
 from src.common.rules import sv_sw
 from src.common.levelsystem import UserLevel, FuncLimiter

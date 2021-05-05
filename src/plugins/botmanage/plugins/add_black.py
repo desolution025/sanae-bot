@@ -1,11 +1,11 @@
 from nonebot import on_command
 from nonebot.rule import to_me
 
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import MessageEvent as Event
+from nonebot_adapter_gocq.bot import Bot
+from nonebot_adapter_gocq.event import MessageEvent as Event
 from nonebot.typing import T_State
 from nonebot.permission import SUPERUSER
-from nonebot.adapters.cqhttp.permission import GROUP_OWNER
+from nonebot_adapter_gocq.permission import GROUP_OWNER
 
 from src.common.log import logger
 from src.common.verify import User_Blocker

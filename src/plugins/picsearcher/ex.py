@@ -7,7 +7,7 @@ from lxml.html import fromstring
 import aiohttp
 import nonebot
 from aiohttp.client_exceptions import InvalidURL
-from nonebot.adapters.cqhttp import MessageSegment
+from nonebot_adapter_gocq import MessageSegment
 
 from .formdata import FormData
 

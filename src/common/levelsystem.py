@@ -1,13 +1,11 @@
 from datetime import datetime
 from functools import wraps
-from typing import Callable
 from inspect import signature
 
 from nonebot.matcher import Matcher
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import MessageEvent
 from nonebot.typing import T_Handler, T_State
 
+from src.common import Bot, MessageEvent
 from src.utils import reply_header, FreqLimiter, DailyNumberLimiter
 from .dbpool import QbotDB
 from .log import logger
@@ -207,7 +205,7 @@ class FuncLimiter:
             only_group (bool, optional): True则不会在私聊中进行任何限制. Defaults to True.
         """
         def deco(func: T_Handler):
-            @wraps(func)
+            # @wraps(func)  TODO: inventory一起装饰的时候会出错，想办法把wraps加上
             async def wrapper(bot: Bot, event: MessageEvent, state: T_State, matcher: Matcher):
                 # 只在群内检测，检测顺序为频率>每日限制>资金
                 logger.debug('开始检测')

@@ -1,6 +1,6 @@
 from nonebot import on_metaevent, on_notice
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import LifecycleMetaEvent, GroupDecreaseNoticeEvent
+from nonebot_adapter_gocq.bot import Bot
+from nonebot_adapter_gocq.event import LifecycleMetaEvent, GroupDecreaseNoticeEvent
 from nonebot.typing import T_State
 from nonebot import get_loaded_plugins
 

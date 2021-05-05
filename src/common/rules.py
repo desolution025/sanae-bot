@@ -13,15 +13,16 @@ from collections import defaultdict
 
 from nonebot.rule import Rule
 from nonebot.typing import T_State
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import Event, MessageEvent, GroupMessageEvent
-from nonebot.adapters.cqhttp.message import MessageSegment, Message
+from nonebot_adapter_gocq.bot import Bot
+from nonebot_adapter_gocq.event import Event, MessageEvent, GroupMessageEvent
+from nonebot_adapter_gocq.message import MessageSegment, Message
 
 from .log import logger
 
 
 swfile = Path(__file__).parent/'group_func_off.json'
 group_func_off = {}
+
 
 """
 数据结构
@@ -39,7 +40,8 @@ if not swfile.exists():
 
 with swfile.open(encoding='utf-8') as j:
     group_func_off = defaultdict(dict, json.load(j))
-    
+
+
 func_ls = {}
 """
 存储所有功能名字的列表，建立功能开关时自动存入，用来查询是否是真实存在的功能
@@ -78,7 +80,7 @@ def comman_rule(match_ev: Event, **kw) -> Callable:
 
     :Args:
 
-        ``match_ev``: 事件类型，从nonebot.adapters.cqhttp.event中导入相应类型
+        ``match_ev``: 事件类型，从nonebot_adapters_gocq.event中导入相应类型
         ``**kw``: 可传入其他变量过滤时间子类型，如sub_type, honor_type等, 参数应为str或Iterable
 
     :Examples:

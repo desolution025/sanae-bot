@@ -1,8 +1,8 @@
 from nonebot import MatcherGroup
-from nonebot.adapters.cqhttp.event import GroupRequestEvent
+from nonebot_adapter_gocq.event import GroupRequestEvent
 from nonebot.permission import SUPERUSER
 from nonebot.rule import ArgumentParser
-from nonebot.adapters.cqhttp.exception import ActionFailed
+from nonebot_adapter_gocq.exception import ActionFailed
 
 from src.common import Bot, MessageEvent, T_State, SUPERUSERS
 from src.common.rules import comman_rule

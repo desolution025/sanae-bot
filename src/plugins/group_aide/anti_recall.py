@@ -3,8 +3,8 @@ from collections import defaultdict
 from datetime import datetime
 
 from nonebot import MatcherGroup
-from nonebot.adapters.cqhttp.event import GroupRecallNoticeEvent
-from nonebot.adapters.cqhttp.exception import ActionFailed
+from nonebot_adapter_gocq.event import GroupRecallNoticeEvent
+from nonebot_adapter_gocq.exception import ActionFailed
 
 from src.common import Bot, GroupMessageEvent, Message, logger
 from src.common.rules import sv_sw, comman_rule

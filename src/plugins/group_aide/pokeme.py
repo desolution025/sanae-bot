@@ -2,7 +2,7 @@ from random import choice
 
 from nonebot import on_notice
 from nonebot.rule import Rule
-from nonebot.adapters.cqhttp.event import PokeNotifyEvent
+from nonebot_adapter_gocq.event import GroupPokeNotifyEvent
 
 from src.common import Bot, MessageSegment, SUPERUSERS
 from src.common.rules import sv_sw, comman_rule
@@ -12,11 +12,11 @@ plugin_name = '夏姬八戳'
 plugin_usage = '戳就是了'
 
 
-pokeme = on_notice(rule=Rule(comman_rule(PokeNotifyEvent))&sv_sw(plugin_name, plugin_usage, '群助手'))
+pokeme = on_notice(rule=Rule(comman_rule(GroupPokeNotifyEvent))&sv_sw(plugin_name, plugin_usage, '群助手'))
 
 
 @pokeme.handle()
-async def poke_reply(bot: Bot, event: PokeNotifyEvent):
+async def poke_reply(bot: Bot, event: GroupPokeNotifyEvent):
     sponsor = event.user_id
     target = event.target_id
     botself = event.self_id

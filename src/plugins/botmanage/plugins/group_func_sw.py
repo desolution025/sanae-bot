@@ -1,8 +1,8 @@
 from nonebot import on_command
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import GroupMessageEvent as Event
+from nonebot_adapter_gocq.bot import Bot
+from nonebot_adapter_gocq.event import GroupMessageEvent as Event
 from nonebot.typing import T_State
-from nonebot.adapters.cqhttp.permission import GROUP
+from nonebot_adapter_gocq.permission import GROUP
 
 from src.common import SUPERUSERS
 from src.common.rules import group_func_off, store_sw, func_ls

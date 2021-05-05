@@ -1,8 +1,8 @@
 from nonebot import on_command
 from nonebot.rule import to_me
-from nonebot.adapters.cqhttp.permission import GROUP
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import Event
+from nonebot_adapter_gocq.permission import GROUP
+from nonebot_adapter_gocq.bot import Bot
+from nonebot_adapter_gocq.event import Event
 
 from src.common.verify import Group_Blocker
 from src.common.easy_setting import BOTNAME, SUPERUSERS

@@ -5,12 +5,12 @@ from nonebot import load_plugins, on_shell_command
 from nonebot.message import run_preprocessor
 from nonebot.matcher import Matcher
 from nonebot.rule import ArgumentParser
-from nonebot.exception import IgnoredException
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import Event, MessageEvent, NoticeEvent, PrivateMessageEvent
 from nonebot.typing import T_State
 from nonebot.permission import SUPERUSER
-from nonebot.adapters.cqhttp.permission import PRIVATE_FRIEND
+from nonebot.exception import IgnoredException
+from nonebot_adapter_gocq.bot import Bot
+from nonebot_adapter_gocq.event import Event, MessageEvent, NoticeEvent, PrivateMessageEvent
+from nonebot_adapter_gocq.permission import PRIVATE_FRIEND
 
 from src.common.verify import Group_Blocker, User_Blocker, Enable_Group
 from src.common import logger

@@ -8,8 +8,8 @@ from base64 import b64encode
 
 import httpx
 from imghdr import what
-from nonebot.adapters.cqhttp.event import MessageEvent
-from nonebot.adapters.cqhttp.message import MessageSegment
+from nonebot_adapter_gocq.event import MessageEvent
+from nonebot_adapter_gocq.message import MessageSegment
 
 from src.common.dbpool import QbotDB
 from src.common.log import logger

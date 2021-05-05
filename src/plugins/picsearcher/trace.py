@@ -6,7 +6,7 @@ from base64 import b64encode
 from typing import List, Tuple
 
 import aiohttp
-from nonebot.adapters.cqhttp import MessageSegment
+from nonebot_adapter_gocq import MessageSegment
 
 from .formdata import FormData
 

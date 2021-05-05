@@ -4,7 +4,7 @@ from typing import Dict
 
 from aiohttp.client_exceptions import ClientError
 from nonebot import on_command, MatcherGroup
-from nonebot.adapters.cqhttp.exception import ActionFailed
+from nonebot_adapter_gocq.exception import ActionFailed
 
 from src.common import MessageSegment, logger, Bot, MessageEvent, T_State, GroupMessageEvent, Message
 from src.common.rules import sv_sw, comman_rule

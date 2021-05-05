@@ -1,11 +1,10 @@
 from pathlib import Path
-from datetime import date, timedelta
 from random import choice
 from nonebot.plugin import on_message
 from src.common import Bot, MessageEvent, logger
 from src.common.rules import sv_sw, full_match
 from src.utils import imgseg, DailyNumberLimiter
-from .ballot import query_fortune, draw_fortune
+from .ballot_fortune import query_fortune, draw_fortune
 
 
 plugin_name = '运势'

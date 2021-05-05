@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 import aiohttp
 from lxml.html import fromstring
-from nonebot.adapters.cqhttp import MessageSegment
+from nonebot_adapter_gocq import MessageSegment
 
 from .formdata import FormData
 

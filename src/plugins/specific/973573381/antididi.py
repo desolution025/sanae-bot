@@ -1,8 +1,5 @@
 from nonebot.plugin import on_notice
-try:
-    from nonebot.adapters.cqhttp.event import GroupBanNoticeEvent
-except:
-    from nonebot_adapter_gocq.event import GroupBanNoticeEvent
+from nonebot_adapter_gocq.event import GroupBanNoticeEvent
 from src.common import T_State, BOTNAME
 from src.common.rules import sv_sw, comman_rule
 from nonebot_adapter_gocq.bot import Bot
@@ -15,7 +12,7 @@ async def didiban(bot: Bot, event: GroupBanNoticeEvent, state: T_State):
         return True
 
 
-antididi = on_notice(rule=sv_sw('抗蒂蒂')&comman_rule(GroupBanNoticeEvent)&didiban)
+antididi = on_notice(rule=sv_sw('抗蒂蒂', '被蒂蒂禁言自动解封', '群专享')&comman_rule(GroupBanNoticeEvent)&didiban)
 
 
 @antididi.handle()

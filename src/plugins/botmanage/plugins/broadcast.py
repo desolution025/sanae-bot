@@ -1,6 +1,6 @@
 from nonebot import on_command
 from nonebot.permission import SUPERUSER
-from nonebot.adapters.cqhttp.exception import CQHTTPAdapterException
+from nonebot_adapter_gocq.exception import AdapterException
 from src.common import Bot, MessageEvent, T_State, logger, CANCEL_EXPRESSION
 
 
@@ -53,7 +53,7 @@ async def send_notice(bot: Bot, event: MessageEvent, state: T_State):
         try:
             for i in target_grps:
                 await bot.send_group_msg(group_id=gid_ls[i], message=state["msg"])
-        except CQHTTPAdapterException as err:
+        except AdapterException as err:
             logger.error(f'Faild to send broadcast with error: {err}')
             await broadcast.finish(f'广播投递失败')
 

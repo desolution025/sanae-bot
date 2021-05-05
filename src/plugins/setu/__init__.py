@@ -9,11 +9,11 @@ import httpx
 from PIL import UnidentifiedImageError
 from cn2an import cn2an
 from nonebot import on_regex, on_keyword
-from nonebot.adapters.cqhttp.bot import Bot
-from nonebot.adapters.cqhttp.event import MessageEvent, PrivateMessageEvent
+from nonebot_adapter_gocq.bot import Bot
+from nonebot_adapter_gocq.event import MessageEvent, PrivateMessageEvent
 from nonebot.typing import T_State
-from nonebot.adapters.cqhttp.message import MessageSegment
-from nonebot.adapters.cqhttp.exception import NetworkError, CQHTTPAdapterException
+from nonebot_adapter_gocq.message import MessageSegment
+from nonebot_adapter_gocq.exception import NetworkError, AdapterException
 
 from src.common import sl_settings
 from src.common.rules import sv_sw, comman_rule
@@ -229,7 +229,7 @@ sl说明：
             await setu.send(msg)
         except NetworkError as err:
             logger.error(f'Maybe callout error happend: {err}')
-        except CQHTTPAdapterException as err:
+        except AdapterException as err:
             logger.error(f"Some Unkown error: {err}")
 
         cd = cd_step(userinfo.level, 150)
