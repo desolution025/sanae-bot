@@ -7,17 +7,17 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-nonebot2 = "2.0.0a10"
 ujson = "4.0.2"
 mysql-connector = "^2.2.9"
 cn2an = "^0.5.9"
 Pillow = "^8.1.0"
 emoji = "^1.2.0"
-pydantic = "1.7.3"
 tencentcloud-sdk-python = "^3.0.379"
 lxml = "^4.6.3"
 aiohttp = "^3.7.4"
 DBUtils = "^2.0.1"
+nb-cli = "^0.4.1"
+nonebot-adapter-gocq = "^2.0.0-alpha.13"
 
 [tool.poetry.dev-dependencies]
 

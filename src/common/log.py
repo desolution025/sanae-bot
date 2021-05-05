@@ -8,7 +8,7 @@ from nonebot.log import logger
 from .easy_setting import DEBUG
 
 
-logfolder = Path('./log')
+logfolder = Path('./logs')
 if not logfolder.exists():
     logfolder.mkdir()
 
