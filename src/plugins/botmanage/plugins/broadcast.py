@@ -4,7 +4,7 @@ from nonebot_adapter_gocq.exception import AdapterException
 from src.common import Bot, MessageEvent, T_State, logger, CANCEL_EXPRESSION
 
 
-plugin_name = '群广播'
+_plugin_name = '群广播'
 
 
 broadcast = on_command('broadcast', aliases={'bc', '广播', '通知群'}, permission=SUPERUSER)

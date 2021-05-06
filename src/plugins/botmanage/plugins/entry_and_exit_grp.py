@@ -4,7 +4,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.rule import ArgumentParser
 from nonebot_adapter_gocq.exception import ActionFailed
 
-from src.common import Bot, MessageEvent, T_State, SUPERUSERS
+from src.common import Bot, MessageEvent, T_State, SUPERUSERS, logger
 from src.common.rules import comman_rule
 
 
@@ -17,7 +17,10 @@ entry_manager = entry_and_exit.on_request(rule=comman_rule(GroupRequestEvent, su
 @entry_manager.handle()
 async def entry_group(bot: Bot, event: GroupRequestEvent):
     if event.user_id in SUPERUSERS:
-        await event.approve(bot)
+        try:
+            await event.approve(bot)
+        except ActionFailed as err:
+            logger.warning(err)
     else:
         await bot.set_group_add_request(flag=event.flag, sub_type=event.sub_type, approve=False, reason='请联系维护组申请群授权')
         for sp in SUPERUSERS:

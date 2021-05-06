@@ -91,4 +91,8 @@ async def show_info(bot: Bot, event: MessageEvent):
         frcode = get_hash_code(FRIENDREQUESTCODESALT, event.user_id)
     else:
         frcode = '<->'
-    await about_bot.finish(link_res('sanae-bot.gif') + f'\nversion-0.1.2\n本群授权时间：<>\n本群授权期至：<>\n您的好友申请码：{frcode}')
+    msg = link_res('sanae-bot.gif') + f'\nversion-0.1.5\n'
+    if event.message_type == 'group':
+        msg += f'本群授权时间：<>\n本群授权期至：<>\n'
+    msg += f'您的好友申请码：{frcode}' + '\n测试、反馈、交流群：708242151(刚建的，进来干啥都行)'
+    await about_bot.finish(msg)
