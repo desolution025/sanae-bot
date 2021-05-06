@@ -1,8 +1,9 @@
 from nonebot import on_command, get_loaded_plugins
 from nonebot.plugin import on_message
-from src.common import Bot, MessageEvent, BOTNAME, logger
+from src.common import Bot, MessageEvent, BOTNAME, FRIENDREQUESTCODESALT
 from src.common.rules import func_ls, group_func_off, full_match
-from src.utils import reply_header, link_res
+from src.common.levelsystem import UserLevel
+from src.utils import reply_header, link_res, get_hash_code
 
 
 _plugin_name = "使用帮助"
@@ -84,6 +85,10 @@ about_bot = on_message(rule=full_match("关于Sanae-Bot"))
 
 
 @about_bot.handle()
-async def show_info(bot: Bot):
+async def show_info(bot: Bot, event: MessageEvent):
     # TODO: 完善信息
-    await about_bot.finish(link_res('sanae-bot.gif') + '\nversion-0.1.2\n本群授权时间：<>\n本群授权期至：<>\n您的好友申请码：<>')
+    if UserLevel(event.user_id).level > 3:
+        frcode = get_hash_code(FRIENDREQUESTCODESALT, event.user_id)
+    else:
+        frcode = '<->'
+    await about_bot.finish(link_res('sanae-bot.gif') + f'\nversion-0.1.2\n本群授权时间：<>\n本群授权期至：<>\n您的好友申请码：{frcode}')

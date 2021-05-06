@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 from typing import Union, Optional
 from base64 import b64encode
+import hmac
 
 import httpx
 from imghdr import what
@@ -302,6 +303,11 @@ class PagingBar:
             self.crtpg += 1
             self.turnpage(self.crtpg)
         return self.bar
+
+
+def get_hash_code(salt: str, msg: str):
+    """获得MD5哈希值"""
+    return hmac.new(key=salt.encode('utf-8'), msg=str(msg).encode('utf-8'), digestmod='MD5').hexdigest()
 
 
 if __name__ == "__main__":

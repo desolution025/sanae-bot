@@ -38,6 +38,7 @@ class EasySetting(BaseSettings):
     cancel_expression: Sequence[str]
     meitupath: str
     setupath: str
+    friendrequestcodesalt: str
 
     class Config:
         env_file = Path.cwd()/f".env.{EnvSetting().ENVIRONMENT}"
@@ -53,6 +54,7 @@ DEBUG = easy_setting.debug
 CANCEL_EXPRESSION = easy_setting.cancel_expression
 MEITUPATH = easy_setting.meitupath
 SETUPATH = easy_setting.setupath
+FRIENDREQUESTCODESALT = easy_setting.friendrequestcodesalt
 
 
 if __name__ == "__main__":
