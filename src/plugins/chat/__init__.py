@@ -88,7 +88,7 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
         return False
     # 回复别人的对话不会触发
     for seg in event.message:
-        if seg.type in ('reply', 'at') and seg.data["qq"] not in (event.self_id, 'all'):
+        if seg.type in ('reply', 'at') and seg.data["qq"] not in (str(event.self_id), 'all'):
             return False
     if event.message_type == 'group' and not event.is_tome():
         for name in BOTNAMES:
@@ -127,4 +127,4 @@ async def talk(bot: Bot, event: MessageEvent, state: T_State):
     else:
         reply = state["reply"]
 
-    await chat.finish(reply.replace('腾讯', '幻想乡'))
+    await chat.finish(reply.replace('腾讯', '幻想乡').replace('呵呵', '呼呼'))

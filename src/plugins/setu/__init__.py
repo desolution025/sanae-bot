@@ -16,7 +16,7 @@ from nonebot_adapter_gocq.message import MessageSegment
 from nonebot_adapter_gocq.exception import NetworkError, AdapterException
 
 from src.common import sl_settings
-from src.common.rules import sv_sw, comman_rule
+from src.common.rules import sv_sw
 from src.common.log import logger
 from src.utils import imgseg, reply_header, FreqLimiter, DailyNumberLimiter
 from src.utils.antiShielding import Image_Handler
@@ -36,7 +36,7 @@ plugin_usage = """别TM搜什么孙笑川色图，诸葛亮色图了，淦
 setu = on_regex(
     r'^ *再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?[色瑟涩][图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
     flags=re.I,
-    rule=sv_sw(plugin_name, plugin_usage) & comman_rule(MessageEvent),
+    rule=sv_sw(plugin_name, plugin_usage),
     priority=2
     )
 

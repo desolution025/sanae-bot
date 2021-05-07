@@ -24,6 +24,7 @@ total_help = f"""
 at{BOTNAME}并发送[屏蔽我] 使{BOTNAME}不响应你的消息
 [关于Sanae-Bot] 本Bot信息
 //**隐藏功能请自行探索**//
+测试、反馈、交流群：708242151(刚建的，进来干啥都行)
 """.strip()
 
 
@@ -91,8 +92,8 @@ async def show_info(bot: Bot, event: MessageEvent):
         frcode = get_hash_code(FRIENDREQUESTCODESALT, event.user_id)
     else:
         frcode = '<->'
-    msg = link_res('sanae-bot.gif') + f'\nversion-0.1.5\n'
+    msg = link_res('sanae-bot.gif') + f'\nversion-0.1.6\n'
     if event.message_type == 'group':
         msg += f'本群授权时间：<>\n本群授权期至：<>\n'
-    msg += f'您的好友申请码：{frcode}' + '\n测试、反馈、交流群：708242151(刚建的，进来干啥都行)'
+    msg += f'您的好友申请码：{frcode}' + '\n测试、反馈、交流群：708242151'
     await about_bot.finish(msg)
