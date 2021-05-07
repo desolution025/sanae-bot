@@ -28,7 +28,7 @@ async def get_sx(word):
             return msg if msg else []
 
 
-sx = on_regex(r'([a-zA-Z]+)是(?:什么|啥)[?？]?', rule=sv_sw(plugin_name, plguin_usage, hierarchy='其它'), priority=2)
+sx = on_regex(r'([a-zA-Z]+)是(?:什么|啥)[?？]?$', rule=sv_sw(plugin_name, plguin_usage, hierarchy='其它'), priority=2)
 
 
 @sx.handle()
