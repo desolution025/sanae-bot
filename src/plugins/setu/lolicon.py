@@ -96,7 +96,7 @@ async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) ->
             api_quota = {
                 'cur_index': cur_index,
                 'quota': result['quota'],
-                'quota_min_ttl': result['quota_min_ttl']
+                'quota_min_ttl': result['quota_min_ttl'],
             }  # 记录当前剩余信息
             if result['code'] == 429:
                 switch_key()
@@ -121,6 +121,14 @@ def get_1200(url: str) -> str:
         master1200缩略图url
     """
     return url.replace('original', 'master')[:-4] + '_master1200.jpg'
+
+
+def show_quota():
+    if api_quota:
+        msg = f"当前使用的API索引：{api_quota['cur_index']}\n当前API剩余额度：{api_quota['quota']}\n最后一次调用时剩余恢复{api_quota['quota_min_ttl']}秒" 
+    else:
+        msg = '上次重启之后还未调用过API'
+    return msg
 
 
 if __name__ == "__main__":

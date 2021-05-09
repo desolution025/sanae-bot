@@ -24,7 +24,7 @@ from src.utils import imgseg, reply_header, FreqLimiter, DailyNumberLimiter
 from src.utils.antiShielding import Image_Handler
 from src.common.easy_setting import MEITUPATH, SETUPATH, BOTNAME
 from src.common.levelsystem import cd_step, UserLevel, FuncLimiter
-from .lolicon import get_setu, get_1200, api_quota
+from .lolicon import get_setu, get_1200, show_quota
 from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 
 
@@ -304,12 +304,9 @@ sl说明：
 quota_query = on_command('lolicon额度', rule=to_me(), permission=SUPERUSER)  # 查询当前API状态
 
 
-async def show_quota(bot: Bot):
-    if api_quota:
-        msg = f"当前使用的API索引：{api_quota['cur_key']}\n当前API剩余额度：{api_quota['quota']}\n最后一次调用时剩余恢复秒数：{api_quota['quota_min_ttl']}"
-    else:
-        msg = '上次重启之后还未调用过API'
-    await quota_query.finish(msg)
+@quota_query.handle()
+async def report_quota(bot: Bot):
+    await quota_query.finish(show_quota())
 
 
 #—————————————————杂项图片API—————————————————————
