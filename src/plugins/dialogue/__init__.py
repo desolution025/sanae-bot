@@ -11,7 +11,7 @@ from imghdr import what
 from nonebot import MatcherGroup
 from nonebot.message import handle_event
 
-from src.common import Bot, MessageEvent, GroupMessageEvent, PrivateMessageEvent, Message, MessageSegment, T_State, CANCEL_EXPRESSION, SUPERUSERS
+from src.common import Bot, MessageEvent, GroupMessageEvent, PrivateMessageEvent, Message, MessageSegment, T_State, CANCEL_EXPRESSION, SUPERUSERS, BOTNAME
 from src.common.rules import sv_sw, full_match
 from src.common.log import logger
 from src.common.levelsystem import UserLevel
@@ -291,6 +291,7 @@ async def reply_(bot: Bot, event: MessageEvent, state: T_State):
 preprob = {}  # 出现率设置预备列表，在其中的用户刚使用了学习对话功能
 learn = qanda.on_command('学习', aliases={'学习对话', '群内学习', '私聊学习', '偷偷学习'})
 SANAE_BOTS = (1538482349, 2503554271, 1431906058, 2080247830, 2021507926, 2078304161, 1979853134, 2974922146, 1670225564)
+ALLOW_SEGMENT = ('text', 'face', 'at', 'record', 'video', 'share')  # 允许学习的CQ码
 
 
 @learn.handle()
@@ -346,6 +347,12 @@ async def parse_qa(bot: Bot, event: MessageEvent, state: T_State):
             if state["public"]:
                 state["force_priv"] = True
                 logger.info('Got at info, force set public to 0')
+        # 不能存入消息的格式
+        if seg.type not in ALLOW_SEGMENT:
+            if seg.type == 'reply':
+                await learn.finish('请不要学习带有回复上文消息的内容，会引发定位错误')
+            else:
+                await learn.finish('接收的消息不在可学习范围内')
 
 
 @learn.got("question", '请输入问句，发送[取消]退出本次学习')
@@ -359,6 +366,8 @@ async def get_q(bot: Bot, event: MessageEvent, state: T_State):
 async def get_a(bot: Bot, event: MessageEvent, state: T_State):
     question = state["question"]
     answer = state["answer"] if "answer" in state else await msg2str(Message(event.raw_message), localize_=True, bot=bot)
+    if len(question) > 255 or len(answer) > 255:
+        await learn.finish(f'内容太长的对话{BOTNAME}记不住的说＞﹏＜')
     if answer:
         logger.debug(f'Current answer is [{answer}]')
         source = event.group_id if event.message_type == "group" else 0
@@ -448,6 +457,12 @@ async def parse_batch_qa(bot: Bot, event: MessageEvent, state: T_State):
             # 强制非公开
             if state["public"]:
                 state["force_priv"] == True
+        # 不能存入消息的格式
+        if seg.type not in ALLOW_SEGMENT:
+            if seg.type == 'reply':
+                await learn.finish('请不要学习带有回复上文消息的内容，会引发定位错误')
+            else:
+                await learn.finish('接收的消息不在可学习范围内')
 
 
 @batch_learn.got('question', prompt='请输入问句，多个问句可使用“|”分隔，发送退出本次学习')
@@ -574,7 +589,8 @@ async def handle_query(bot: Bot, event: MessageEvent, state: T_State):
 {creation_time}
 ────────────
 ''' for sid, answer, probability, creator, source, creation_time, public in result]
-    
+    # TODO: 把回复里的音频和视频分离出来变成'[音频][视频]'
+
     record_bar = Pagination(*result_ls)
     if len(record_bar.rcd_ls) == 1:
         msg = ''.join(result_ls)
