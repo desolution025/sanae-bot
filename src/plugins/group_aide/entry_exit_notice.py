@@ -127,12 +127,14 @@ async def edit_speech(bot: Bot, event: GroupMessageEvent, state: T_State):
         if arg:
             if arg.isdigit():
                 index = int(arg)
-                if index > 0 and index <= len(settings['approve']) + len(settings['invite']):
-                    if index <= len(settings['approve']):
-                        del settings['approve'][index - 1]
-                    else:
-                        index -= len(settings['approve'])
-                        del settings['invite'][index - 1]
+                # if index > 0 and index <= len(settings['approve']) + len(settings['invite']):
+                if index > 0 and index <= len(settings['approve']):
+                    # if index <= len(settings['approve']):
+                    #     del settings['approve'][index - 1]
+                    # else:
+                    #     index -= len(settings['approve'])
+                    #     del settings['invite'][index - 1]
+                    del settings['approve'][index - 1]
                     save_wl_settings()
                     await speech_editor.finish(f'已删除序号为{index}的迎新语句')
                 else:
@@ -171,14 +173,17 @@ async def wl_secondary_operation(bot: Bot, event: GroupMessageEvent, state: T_St
     elif state['operation'] == 'delete':
         if event.raw_message.isdigit():
             index = int(event.raw_message)
-            if index > 0 and index <= len(settings['approve']) + len(settings['invite']):
-                if index <= len(settings['approve']):
-                    del settings['approve'][index - 1]
-                    msg = f'已删除序号为{index}的入群欢迎语句'
-                else:
-                    index -= len(settings['approve'])
-                    del settings['invite'][index - 1]
-                    msg = f'已删除序号为{index}的被邀请群欢迎语句'
+            # if index > 0 and index <= len(settings['approve']) + len(settings['invite']):
+            if index > 0 and index <= len(settings['approve']):
+                # if index <= len(settings['approve']):
+                #     del settings['approve'][index - 1]
+                #     msg = f'已删除序号为{index}的入群欢迎语句'
+                # else:
+                #     index -= len(settings['approve'])
+                #     del settings['invite'][index - 1]
+                #     msg = f'已删除序号为{index}的被邀请群欢迎语句'
+                del settings['approve'][index - 1]
+                msg = f'已删除序号为{index}的迎新语句'
             else:
                 await speech_editor.finish('输入的参数不在列表内，请检查序号')
         else:
