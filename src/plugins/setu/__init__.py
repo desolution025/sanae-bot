@@ -115,7 +115,7 @@ sl说明：
 
     if userinfo.fund < cost and not in_free:
         if userinfo.fund > 0:
-            refuse = f'你还剩{userinfo.fund}块钱啦，要饭也不至于这么穷吧！'
+            refuse = choice((f'你还剩{userinfo.fund}块钱啦，要饭也不至于这么穷吧！', f'你只剩{userinfo.fund}块钱了，要不考虑援交一下赚点钱？'))
         elif userinfo.level == 0 and userinfo.fund == 0:
             refuse = '每天有三次免费次数哦，使用[签到]领取资金来获得更多使用次数吧~'
         else:
