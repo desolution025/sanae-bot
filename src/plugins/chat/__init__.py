@@ -35,10 +35,10 @@ def record_settings(gid: str, prob: float):
         json.dump(prob_settings, j, indent=4)
 
 
-chatbot = MatcherGroup(type='message', rule=sv_sw(plugin_name, plugin_usage))
+chatbot = MatcherGroup(type='message')
 
 
-set_prob = chatbot.on_command('聊天触发率', rule=comman_rule(GroupMessageEvent), priority=2)
+set_prob = chatbot.on_command('聊天触发率', rule=sv_sw(plugin_name, plugin_usage)&comman_rule(GroupMessageEvent), priority=2)
 
 
 @set_prob.handle()
@@ -118,7 +118,7 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
     return True
 
 
-chat = chatbot.on_message(rule=chat_checker, priority=4)
+chat = chatbot.on_message(rule=sv_sw(plugin_name, plugin_usage)&chat_checker, priority=4)
 
 
 @chat.handle()
