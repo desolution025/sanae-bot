@@ -291,7 +291,7 @@ async def reply_(bot: Bot, event: MessageEvent, state: T_State):
 preprob = {}  # 出现率设置预备列表，在其中的用户刚使用了学习对话功能
 learn = qanda.on_command('学习', aliases={'学习对话', '群内学习', '私聊学习', '偷偷学习'})
 SANAE_BOTS = (1538482349, 2503554271, 1431906058, 2080247830, 2021507926, 2078304161, 1979853134, 2974922146, 1670225564)
-ALLOW_SEGMENT = ('text', 'face', 'at', 'record', 'video', 'share')  # 允许学习的CQ码
+ALLOW_SEGMENT = ('text', 'face', 'image', 'at', 'record', 'video', 'share')  # 允许学习的CQ码
 
 
 @learn.handle()
