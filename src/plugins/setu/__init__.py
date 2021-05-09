@@ -8,7 +8,9 @@ from random import choice
 import httpx
 from PIL import UnidentifiedImageError
 from cn2an import cn2an
-from nonebot import on_regex, on_keyword
+from nonebot import on_regex, on_keyword, on_command
+from nonebot.rule import to_me
+from nonebot.permission import SUPERUSER
 from nonebot_adapter_gocq.bot import Bot
 from nonebot_adapter_gocq.event import MessageEvent, PrivateMessageEvent
 from nonebot.typing import T_State
@@ -22,12 +24,12 @@ from src.utils import imgseg, reply_header, FreqLimiter, DailyNumberLimiter
 from src.utils.antiShielding import Image_Handler
 from src.common.easy_setting import MEITUPATH, SETUPATH, BOTNAME
 from src.common.levelsystem import cd_step, UserLevel, FuncLimiter
-from .lolicon import get_setu, get_1200
+from .lolicon import get_setu, get_1200, api_quota
 from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 
 
 plugin_name = '色图'
-plugin_usage = """别TM搜什么孙笑川色图，诸葛亮色图了，淦
+plugin_usage = """别TM搜什么孙笑川色图，兄贵色图了，淦
 ———————
 设置sl只最大最小是否5级才对这个有用，以下等级可以忽略
 """.strip()
@@ -98,13 +100,15 @@ sl说明：
     # 频率限制条款，注册了频率限制器
     flmt = FreqLimiter(uid, 'setu')
     if not flmt.check():
-        refuse = f'你冲得太快了，请{ceil(flmt.left_time())}秒后再冲'
+        refuse = f'你冲得太快了，请{ceil(flmt.left_time())}秒后再冲'  # 不用round主要是防止出现'还有0秒'的不科学情况
         if userinfo.level == 0:
             refuse += '，提升等级可以加快装填哦~'
-        await setu.finish(reply_header(event, refuse))  # 不用round主要是防止出现'还有0秒'的不科学情况
+        await setu.finish(reply_header(event, refuse))
+    cd = cd_step(userinfo.level, 150)  # 冷却时间
+    flmt.start_cd(cd)  # 先进行冷却，防止连续呼叫击穿频率装甲，要是没返回图的话解掉
 
     # 资金限制条款，注册了每日次数限制器
-    cost = num * 3 + 2
+    cost = num * 3
     dlmt = DailyNumberLimiter(uid, '色图', 3)
     in_free = True if event.message_type == 'private' and event.sub_type == 'friend'\
             else dlmt.check(close_conn=False)  # 来自好友的对话不消耗金币
@@ -117,6 +121,7 @@ sl说明：
         else:
             refuse = '你已经穷得裤子都穿不起了，到底是做了什么呀？！'
         dlmt.conn.close()  # 确认直接结束不会增加调用次数了，直接返还链接
+        flmt.start_cd(0)
         await setu.finish(reply_header(event, refuse))
 
     kwd = state["_matched_dict"]['kwd'] or ''
@@ -147,6 +152,7 @@ sl说明：
     else:
         logger.error(f'多次链接API失败，当前参数: kwd: [{kwd}], num: {num}, r18: {r18}')
         dlmt.conn.close()
+        flmt.start_cd(0)
         await setu.finish('链接API失败, 若多次失败请反馈给维护组', at_sender=True)
     logger.debug('Receive lolicon API data!')
 
@@ -232,8 +238,8 @@ sl说明：
         except AdapterException as err:
             logger.error(f"Some Unkown error: {err}")
 
-        cd = cd_step(userinfo.level, 150)
-        flmt.start_cd(cd)  # 开始冷却
+        # cd = cd_step(userinfo.level, 150)
+        # flmt.start_cd(cd)
 
         if miss_count < result['count']:
             if not in_free:
@@ -241,6 +247,7 @@ sl说明：
                 userinfo.turnover(-cost)  # 如果超过每天三次的免费次数则扣除相应资金
             dlmt.increase()  # 调用量加一
         else:
+            flmt.start_cd(0)  # 一张没得到也刷新CD
             dlmt.conn.close()
 
         # 下载原始图片做本地备份
@@ -283,16 +290,30 @@ sl说明：
         return
 
     elif result['code'] == 404:
-        await setu.finish(msg + MessageSegment.text(f'没有找到{kwd}的涩图，试试其他标签吧~'))
+        await setu.send(msg + MessageSegment.text(f'没有找到{kwd}的涩图，试试其他标签吧~'))
     elif result['code'] == 429:
-        await setu.finish(msg + MessageSegment.text('今日API额度用尽了，群友们是真的很能冲呢~'))
+        await setu.send(msg + MessageSegment.text('所有API额度已用尽，群友们是真的很能冲呢~'))
     elif result['code'] == 401:
-        await setu.finish(msg + MessageSegment.text('APIKEY貌似出了问题，请联系维护组检查'))
+        await setu.send(msg + MessageSegment.text('APIKEY貌似出了问题，请联系维护组检查'))
     else:
-        await setu.finish(msg + MessageSegment.text('获取涩图失败，请稍后再试'))
+        await setu.send(msg + MessageSegment.text('获取涩图失败，请稍后再试'))
+    flmt.start_cd(0)
     dlmt.conn.close()
 
+
+quota_query = on_command('lolicon额度', rule=to_me(), permission=SUPERUSER)  # 查询当前API状态
+
+
+async def show_quota(bot: Bot):
+    if api_quota:
+        msg = f"当前使用的API索引：{api_quota['cur_key']}\n当前API剩余额度：{api_quota['quota']}\n最后一次调用时剩余恢复秒数：{api_quota['quota_min_ttl']}"
+    else:
+        msg = '上次重启之后还未调用过API'
+    await quota_query.finish(msg)
+
+
 #—————————————————杂项图片API—————————————————————
+
 
 type_rex = re.compile(r'来张(?P<method>(?:手机)|(?:pc))?(?P<lx>.+)?壁纸')
 

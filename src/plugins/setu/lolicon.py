@@ -1,12 +1,37 @@
 from configparser import ConfigParser
 from pathlib import Path
+from itertools import cycle
 import httpx
+try:
+    from src.common import logger
+except ImportError:
+    from loguru import logger
 
 
 cfg = ConfigParser()
 cfg.read(Path(__file__).parent/"setu_config.ini")
 API = 'https://api.lolicon.app/setu/'
-APIKEY = dict(cfg.items('keys'))['key1']
+APIKEYS = dict(cfg.items('keys'))
+
+
+api_cs = cycle(range(len(APIKEYS)))  # 循环索引
+def switch_key():
+    global cur_index
+    global cur_key
+    cur_index = next(api_cs) + 1  # 目前配置内key索引是从1开始的
+    cur_key = APIKEYS[f'key{cur_index}']
+    logger.info(f'Switch to the {cur_index}(st|nd|th) APIKEY of lolicon: {cur_key}')
+
+switch_key() # 确定首次使用的APIKEY
+api_quota = {}  # 当前API剩余额度存储在这个里面，用来实时查询剩余数量
+"""
+结构：
+api_quota: {
+    'cur_index': int,
+    'quota': int,
+    'quota_min_ttl': int
+}
+"""
 
 
 async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) -> dict:
@@ -56,15 +81,29 @@ async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) ->
 
     """
     params = {
-            'apikey': APIKEY,
+            'apikey': cur_key,
             'r18': r18,
             'keyword': kwd,
             'num': num,
             'size1200': size1200
             }
     async with httpx.AsyncClient() as client:
-        resp = await client.get(API, params=params, timeout=120)
-    return resp.json()
+        switch_times = 0
+        while switch_times < len(APIKEYS):  # 循环切换API，如果全都用光了的话只好原路返回了
+            resp = await client.get(API, params=params, timeout=120)
+            result = resp.json()
+            global api_quota
+            api_quota = {
+                'cur_index': cur_index,
+                'quota': result['quota'],
+                'quota_min_ttl': result['quota_min_ttl']
+            }  # 记录当前剩余信息
+            if result['code'] == 429:
+                switch_key()
+                switch_times += 1
+            else:
+                break
+    return result
 
 
 def get_1200(url: str) -> str:

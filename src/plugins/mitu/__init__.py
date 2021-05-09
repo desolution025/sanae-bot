@@ -3,9 +3,10 @@ from math import ceil
 
 from nonebot import on_regex, MatcherGroup
 from nonebot.typing import T_State
+from nonebot_adapter_gocq.exception import AdapterException
 from cn2an import cn2an
 
-from src.common import sl_settings, save_sl, Bot, GroupMessageEvent, MessageSegment
+from src.common import sl_settings, save_sl, Bot, GroupMessageEvent, MessageSegment, logger
 from src.common.rules import sv_sw, comman_rule
 from src.common.easy_setting import BOTNAME, SUPERUSERS
 from src.common.levelsystem import UserLevel, cd_step
@@ -213,8 +214,6 @@ sl说明：
         elif num > 1:
             await mitu.finish(reply_header(event, '啊这..0级用户一次只能叫一张哦，使用[签到]或者学习对话可以提升等级~'))
 
-
-
     # 频率限制条款，注册了频率限制器
     flmt = FreqLimiter(uid, 'mitu')
     if not flmt.check():
@@ -222,9 +221,11 @@ sl说明：
         if userinfo.level == 0:
             refuse += '，提升等级可以缩短冷却时间哦~'
         await mitu.finish(reply_header(event, refuse))  # 不用round主要是防止出现'还有0秒'的不科学情况
+    cd = cd_step(userinfo.level, 150)
+    flmt.start_cd(cd)  # 直接开始冷却，防止高频弹药击穿频率装甲，没返回图的话重新计算
 
     # 资金限制条款，注册了每日次数限制器
-    cost = num * 3 + 2
+    cost = num * 3
     dlmt = DailyNumberLimiter(uid, '美图', 3)
     in_free = dlmt.check(close_conn=False)
 
@@ -236,6 +237,7 @@ sl说明：
         else:
             refuse = '你已经穷得裤子都穿不起了，到底是做了什么呀？！'
         dlmt.conn.close()  # 确认直接结束不会增加调用次数了，直接返还链接
+        flmt.start_cd(0)
         await mitu.finish(reply_header(event, refuse))
 
     kwd = state["_matched_dict"]['kwd']
@@ -249,6 +251,7 @@ sl说明：
 
     success, result = get_mitu(event.group_id, kwds, num, min_sl, max_sl)
     if not success:
+        flmt.start_cd(0)
         dlmt.conn.close()
         await mitu.finish(reply_header(event, result))
         
@@ -276,10 +279,10 @@ sl说明：
         for su in SUPERUSERS:
             await bot.send_private_msg(user_id=su, message='貌似图库出了问题，错误记录在日志里了')
 
-    await mitu.send(reply_header(event, msg))
-
-    cd = cd_step(userinfo.level, 150)
-    flmt.start_cd(cd)  # 开始冷却
+    try:
+        await mitu.send(reply_header(event, msg))
+    except AdapterException as err:
+        logger.error(f'Some error happend when send mitu: {err}')
 
     if miss_count < len(result):
         if not in_free:
@@ -287,4 +290,5 @@ sl说明：
             userinfo.turnover(-cost)  # 如果超过每天三次的免费次数则扣除相应资金
         dlmt.increase()  # 调用量加一
     else:
+        flmt.start_cd(0)
         dlmt.conn.close()
