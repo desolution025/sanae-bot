@@ -20,7 +20,7 @@ def switch_key():
     global cur_key
     cur_index = next(api_cs) + 1  # 目前配置内key索引是从1开始的
     cur_key = APIKEYS[f'key{cur_index}']
-    logger.info(f'Switch to the {cur_index}(st|nd|th) APIKEY of lolicon: {cur_key}')
+    logger.info(f'Switch to the {cur_index} (st|nd|th) APIKEY of lolicon: {cur_key}')
 
 switch_key() # 确定首次使用的APIKEY
 api_quota = {}  # 当前API剩余额度存储在这个里面，用来实时查询剩余数量
@@ -80,18 +80,19 @@ async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) ->
             }
 
     """
-    params = {
-            'apikey': cur_key,
-            'r18': r18,
-            'keyword': kwd,
-            'num': num,
-            'size1200': size1200
-            }
     async with httpx.AsyncClient() as client:
         switch_times = 0
-        while switch_times < len(APIKEYS):  # 循环切换API，如果全都用光了的话只好原路返回了
+        while switch_times < len(APIKEYS) - 1:  # 循环切换API，如果全都用光了的话只好原路返回了
+            params = {
+                    'apikey': cur_key,
+                    'r18': r18,
+                    'keyword': kwd,
+                    'num': num,
+                    'size1200': size1200
+                    }
             resp = await client.get(API, params=params, timeout=120)
             result = resp.json()
+            logger.debug(result)
             global api_quota
             api_quota = {
                 'cur_index': cur_index,
