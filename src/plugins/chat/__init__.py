@@ -74,7 +74,8 @@ BAN_EXPRESSION = ('姑姑请求场外支援呀',
                 '尽管看不懂，但姑姑能够理解你此刻复杂的心情~',
                 '哈哈哈，看不懂',
                 '你好， 我是腾讯小龙女，请把你的问题告诉我吧',
-                '不明白你的意思，我们还是聊聊今天的新闻吧')
+                '不明白你的意思，我们还是聊聊今天的新闻吧',
+                '先让我堵上耳朵，捂上眼睛')
 
 
 def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
@@ -88,12 +89,13 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
         return False
     # 回复别人的对话不会触发
     for seg in event.message:
-        if seg.type in ('reply', 'at') and seg.data["qq"] not in (str(event.self_id), 'all'):
+        if seg.type == 'at' and seg.data["qq"] not in (str(event.self_id), 'all') or event.reply and event.reply.sender.user_id != event.self_id:
             return False
     if event.message_type == 'group' and not event.is_tome():
         for name in BOTNAMES:
             if name in msg:
-                state['q'] = msg.replace(name, '你')
+                person = '你' if msg.endswith(BOTNAME) else ''  # 名称在中间的时候替换成第二人称，名称在末尾时直接去掉
+                state['q'] = msg.replace(name, person)
                 return True  # 内容里有bot名字的话会默认触发
         gid = str(event.group_id)
         prob = prob_settings[gid] if gid in prob_settings else 0.05  # 默认触发率5%
@@ -125,6 +127,9 @@ async def talk(bot: Bot, event: MessageEvent, state: T_State):
     if "reply" not in state:
         reply, confidence = ai_chat(q)
     else:
-        reply = state["reply"]
+        reply: str = state["reply"]
 
-    await chat.finish(reply.replace('腾讯', '幻想乡').replace('呵呵', '呼呼'))
+    if reply.startswith('呵呵'):  # 替掉开头的呵呵
+        reply = reply.replace('呵呵', '呼呼')
+
+    await chat.finish(reply.replace('腾讯', '幻想乡'))
