@@ -1,6 +1,6 @@
 from nonebot import on_command, get_loaded_plugins
 from nonebot.plugin import on_message
-from src.common import Bot, MessageEvent, BOTNAME, FRIENDREQUESTCODESALT
+from src.common import Bot, MessageEvent, BOTNAME, FRIENDREQUESTCODESALT, BOT_VERSION
 from src.common.rules import func_ls, group_func_off, full_match
 from src.common.levelsystem import UserLevel
 from src.utils import reply_header, link_res, get_hash_code
@@ -92,8 +92,8 @@ async def show_info(bot: Bot, event: MessageEvent):
         frcode = get_hash_code(FRIENDREQUESTCODESALT, event.user_id)
     else:
         frcode = '<->'
-    msg = link_res('sanae-bot.gif') + f'\nversion-0.1.6\n'
+    msg = link_res('sanae-bot.gif') + f'\nversion-{BOT_VERSION}\n'
     if event.message_type == 'group':
-        msg += f'本群授权时间：<>\n本群授权期至：<>\n'
+        msg += f'本群授权时间：<->\n本群授权期至：<->\n'
     msg += f'您的好友申请码：{frcode}' + '\n测试、反馈、交流群：708242151'
     await about_bot.finish(msg)

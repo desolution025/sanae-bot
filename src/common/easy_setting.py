@@ -10,12 +10,21 @@ BOTNAME: str
 from pathlib import Path
 from pydantic import BaseSettings, validator
 from typing import Optional, Sequence
+import toml
 
 from nonebot_adapter_gocq.bot import Bot
 from nonebot_adapter_gocq.event import MessageEvent, GroupMessageEvent, PrivateMessageEvent
 from nonebot_adapter_gocq.message import Message, MessageSegment
 from nonebot.typing import T_State
 
+
+poetry_config_file = Path.cwd()/'pyproject.toml'
+
+
+poetry_config = toml.load(poetry_config_file)
+BOT_VERSION = poetry_config['tool']['poetry']['version']
+del poetry_config_file
+del poetry_config
 
 class EnvSetting(BaseSettings):
     ENVIRONMENT: Optional[str] = None
@@ -58,4 +67,5 @@ FRIENDREQUESTCODESALT = easy_setting.friendrequestcodesalt
 
 
 if __name__ == "__main__":
-    print(SUPERUSERS, BOTNAME, DEBUG, MEITUPATH, SETUPATH)
+    print(BOT_VERSION)
+    print(SUPERUSERS, BOTNAME, DEBUG, MEITUPATH, SETUPATH, FRIENDREQUESTCODESALT)
