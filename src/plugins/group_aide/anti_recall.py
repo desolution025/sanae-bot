@@ -1,10 +1,12 @@
 from random import randint
 from collections import defaultdict
 from datetime import datetime
+from asyncio import sleep as asleep
 
 from nonebot import MatcherGroup
 from nonebot_adapter_gocq.event import GroupRecallNoticeEvent
 from nonebot_adapter_gocq.exception import ActionFailed
+from nonebot_adapter_gocq.utils import unescape
 
 from src.common import Bot, GroupMessageEvent, Message, logger
 from src.common.rules import sv_sw, comman_rule
@@ -92,6 +94,14 @@ async def show_record(bot: Bot, event: GroupMessageEvent):
         logger.debug(f"Got recalled message({type(msginfo['message'])}): {str(msginfo['message'])}")
     except ActionFailed:
         await recorder.finish(reply_header(event, '这条记录不存在或者因为太久所以被消除了~'))
+    for seg in msginfo["message"]:
+        logger.debug(f'Check type of segment: {seg}\n{seg["type"]}')
+        if seg['type'] not in ('text', 'face', 'image', 'at', 'reply'):  # 可以夹在普通消息框里的片段
+            can_append = False
+            break
+    else:
+        can_append = True
+
     time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
     try:
         litigant_info = await bot.get_group_member_info(group_id=event.group_id, user_id=msginfo["sender"]["user_id"])
@@ -102,4 +112,12 @@ async def show_record(bot: Bot, event: GroupMessageEvent):
         header = f"{name}在{time}被撤回了：\n"
     else:
         header = f"{name}在{time}撤回了：\n"
-    await recorder.finish(Message(header) + (Message(msginfo["message"])))
+
+    if can_append:
+        await recorder.finish(Message(header) + (Message(msginfo["message"])))
+    else:
+        await recorder.send(Message(header))
+        await asleep(1)
+        # await recorder.finish(msginfo["message"])
+
+        await recorder.finish(Message(msginfo["raw_message"]))
