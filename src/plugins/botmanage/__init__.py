@@ -9,7 +9,7 @@ from nonebot.typing import T_State
 from nonebot.permission import SUPERUSER
 from nonebot.exception import IgnoredException
 from nonebot_adapter_gocq.bot import Bot
-from nonebot_adapter_gocq.event import Event, MessageEvent, NoticeEvent, PrivateMessageEvent, GroupIncreaseNoticeEvent, GroupDecreaseNoticeEvent
+from nonebot_adapter_gocq.event import Event, MessageEvent, NoticeEvent, PrivateMessageEvent, GroupIncreaseNoticeEvent, GroupDecreaseNoticeEvent, PrivateMessageSentEvent
 from nonebot_adapter_gocq.permission import PRIVATE_FRIEND
 
 from src.common.verify import Group_Blocker, User_Blocker, Enable_Group
@@ -52,6 +52,13 @@ async def global_switch_filter(mathcer: Matcher, bot: Bot, event: Event, state:T
 
     if event.get_type() in ('message', 'notice', 'request') and not User_Blocker(event.user_id).check_block():
         raise IgnoredException('该用户在阻塞列表中')
+
+    if isinstance(event, PrivateMessageEvent) and event.user_id == event.self_id:
+        raise IgnoredException('由于当前版本gocq客户端的上报消息类型错误问题必须阻断的事件')
+        # data = {}
+        # for p in filter(lambda x: not (x.startswith('__') and x.endswith('__')), dir(event)):
+        #     data[p] = getattr(event, p)
+        # event = PrivateMessageSentEvent(**data)
 
 
 # store all subplugins
