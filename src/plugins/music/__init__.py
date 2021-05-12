@@ -84,13 +84,19 @@ def mix_song_list(netease:dict , qqmusic: dict, step: int = 3) -> dict:
     return mix_list, mix_page
 
 
+def filter_noarg(bot: Bot, event: MessageEvent, state: T_State):
+    """过滤掉“我想听”但是没有参数的情况"""
+    if event.raw_message != '我想听'.strip():
+        return True
+
+
 # 命令部分
 music = on_command('点歌',
                     aliases={'搜歌', '我想听', '来首',
                             '网易云','搜网易云', '网易云点歌', '网易云搜歌',
                             'QQ音乐', '搜QQ音乐', 'QQ音乐点歌','QQ音乐搜歌',
                             '咪咕', '搜咪咕', '咪咕点歌', '咪咕搜歌'},
-                    rule=sv_sw(plugin_name, plugin_usage),
+                    rule=sv_sw(plugin_name, plugin_usage)&filter_noarg,
                     priority=2)
 limiter = FuncLimiter('点歌', cd_rel=120, max_free=2, cost=3)
 

@@ -155,7 +155,7 @@ async def report_sl(bot: Bot, event: GroupMessageEvent):
 
 
 mitu = on_regex(
-    r'^ *再?[来來发發给給]?(?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?美[图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
+    r'^ *再?[来來发發给給](?:(?P<num>[\d一二两三四五六七八九十]*)[张張个個幅点點份])?(?P<r18_call>[非(?:不是)]?R18)?(?P<kwd>.{0,10}?[^的])?的?(?P<r18_call2>[非(?:不是)]?R18)?的?美[图圖](?:(?P<num2>[\d一二两三四五六七八九十]*)[张張个個幅点點份])? *$',
     flags=re.I,
     rule=sv_sw(plugin_name, usage=plugin_usage) & comman_rule(GroupMessageEvent),
     priority=2
