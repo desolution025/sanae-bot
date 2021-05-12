@@ -288,8 +288,15 @@ async def reply_(bot: Bot, event: MessageEvent, state: T_State):
 #———————————————单次学习————————————————
 
 
+def filter_selflearn(bot: Bot, event: MessageEvent, state: T_State):
+    """过滤非bot管理员的自学"""
+    if event.message.extract_plain_text().startswith('自学') and event.user_id not in SUPERUSERS:
+        return False
+    return True
+
+
 preprob = {}  # 出现率设置预备列表，在其中的用户刚使用了学习对话功能
-learn = qanda.on_command('学习', aliases={'学习对话', '群内学习', '私聊学习', '偷偷学习'})
+learn = qanda.on_command('学习', aliases={'学习对话', '群内学习', '私聊学习', '偷偷学习', '自学'}, rule=sv_sw('问答对话', plugin_usage)&filter_selflearn)
 SANAE_BOTS = (1538482349, 2503554271, 1431906058, 2080247830, 2021507926, 2078304161, 1979853134, 2974922146, 1670225564)
 ALLOW_SEGMENT = ('text', 'face', 'image', 'at', 'record', 'video', 'share')  # 允许学习的CQ码
 
@@ -313,6 +320,8 @@ async def first_receive(bot: Bot, event: MessageEvent, state: T_State):
         else:
             await learn.finish(f'[{command}]只适用于在私聊中对话哦，公开性对话学习请使用[学习对话]，群内保密对话学习命令为[群内学习]')
     else:
+        if command == '自学':
+            state["selflearn"] = True
         state["public"] = 1
     state["force_priv"] = False  # 强制不公开，输入q或a中有at信息且没有用私有学习命令时改为true并在最后将public强制设置为1
     arg = str(event.get_message())
@@ -372,8 +381,9 @@ async def get_a(bot: Bot, event: MessageEvent, state: T_State):
         logger.debug(f'Current answer is [{answer}]')
         source = event.group_id if event.message_type == "group" else 0
         public = 0 if state["force_priv"] else state["public"]
-        logger.info(f'Insert record to corpus :\nquestion:[{question}]\nanswer:[{answer}]\npublic:{public}\ncreator:{event.get_user_id()}\nsource:{source}')
-        result = insertone(question, answer, 70, event.user_id, source, public)
+        creator = event.user_id if 'selflearn' not in state else event.self_id
+        logger.info(f'Insert record to corpus :\nquestion:[{question}]\nanswer:[{answer}]\npublic:{public}\ncreator:{creator}\nsource:{source}')
+        result = insertone(question, answer, 70, creator, source, public)
         if isinstance(result, tuple):
             await learn.finish(f'记录已被用户{result[0]}在{result[1]}时创建')
         else:
@@ -422,7 +432,14 @@ async def set_prob(bot: Bot, event: MessageEvent, state: T_State):
 #———————————————批量学习————————————————
 
 
-batch_learn = qanda.on_command('批量学习', aliases={'群内批量学习', '批量群内学习', '私聊批量学习', '批量私聊学习'})
+def filter_selflearn(bot: Bot, event: MessageEvent, state: T_State):
+    """过滤非bot管理员的批量自学"""
+    if event.message.extract_plain_text().startswith('批量自学') and event.user_id not in SUPERUSERS:
+        return False
+    return True
+
+
+batch_learn = qanda.on_command('批量学习', aliases={'群内批量学习', '批量群内学习', '私聊批量学习', '批量私聊学习', '批量自学'})
 
 
 @batch_learn.handle()
@@ -439,6 +456,8 @@ async def start_learn(bot: Bot, event: MessageEvent, state: T_State):
         else:
             await learn.finish(f'[{command}]只适用于在私聊中对话哦，公开性批量对话学习请使用[批量学习]，群内保密对话学习命令为[批量群内学习]')
     else:
+        if command == '自学':
+            state["selflearn"] = True
         state["public"] = 1
     state["force_priv"] = False  # 强制不公开，输入q或a中有at信息且没有用私有学习命令时改为true并在最后将public强制设置为1
 
@@ -512,7 +531,8 @@ async def batch_get_prob(bot: Bot, event: MessageEvent, state: T_State):
 
     public = 0 if state["force_priv"] else state["public"]
     source = event.group_id if event.message_type == "group" else 0
-    result = insertmany(state["question"].split('|'), state["answer"].split('|'), prob, event.user_id, source, public)
+    creator = event.user_id if 'selflearn' not in state else event.self_id
+    result = insertmany(state["question"].split('|'), state["answer"].split('|'), prob, creator, source, public)
     if isinstance(result, int):
         exp = cgauss(5, 1, 1) + result - 1
         fund = cgauss(10, 1, 1) + result - 1
