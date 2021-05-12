@@ -379,7 +379,7 @@ async def get_a(bot: Bot, event: MessageEvent, state: T_State):
         await learn.finish(f'内容太长的对话{BOTNAME}记不住的说＞﹏＜')
     if answer:
         logger.debug(f'Current answer is [{answer}]')
-        source = event.group_id if event.message_type == "group" else 0
+        source = event.group_id if event.message_type == "group" and 'selflearn' not in state else 0
         public = 0 if state["force_priv"] else state["public"]
         creator = event.user_id if 'selflearn' not in state else event.self_id
         logger.info(f'Insert record to corpus :\nquestion:[{question}]\nanswer:[{answer}]\npublic:{public}\ncreator:{creator}\nsource:{source}')
@@ -456,7 +456,7 @@ async def start_learn(bot: Bot, event: MessageEvent, state: T_State):
         else:
             await learn.finish(f'[{command}]只适用于在私聊中对话哦，公开性批量对话学习请使用[批量学习]，群内保密对话学习命令为[批量群内学习]')
     else:
-        if command == '自学':
+        if command == '批量自学':
             state["selflearn"] = True
         state["public"] = 1
     state["force_priv"] = False  # 强制不公开，输入q或a中有at信息且没有用私有学习命令时改为true并在最后将public强制设置为1
@@ -530,7 +530,7 @@ async def batch_get_prob(bot: Bot, event: MessageEvent, state: T_State):
             asyncio.sleep(1)  # 停一秒防止设置成功的消息和此条消息顺序出错
 
     public = 0 if state["force_priv"] else state["public"]
-    source = event.group_id if event.message_type == "group" else 0
+    source = event.group_id if event.message_type == "group" and 'selflearn' not in state else 0
     creator = event.user_id if 'selflearn' not in state else event.self_id
     result = insertmany(state["question"].split('|'), state["answer"].split('|'), prob, creator, source, public)
     if isinstance(result, int):
