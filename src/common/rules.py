@@ -39,7 +39,7 @@ if not swfile.exists():
     store_sw()
 
 with swfile.open(encoding='utf-8') as j:
-    group_func_off = defaultdict(dict, json.load(j))
+    group_func_off = defaultdict(list, json.load(j))
 
 
 func_ls = {}
