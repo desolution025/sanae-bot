@@ -104,7 +104,7 @@ sl说明：
         if userinfo.level == 0:
             refuse += '，提升等级可以加快装填哦~'
         await setu.finish(reply_header(event, refuse))
-    cd = cd_step(userinfo.level, 150)  # 冷却时间
+    cd = cd_step(userinfo.level, 480)  # 冷却时间
     flmt.start_cd(cd)  # 先进行冷却，防止连续呼叫击穿频率装甲，要是没返回图的话解掉
 
     # 资金限制条款，注册了每日次数限制器

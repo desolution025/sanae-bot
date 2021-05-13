@@ -221,7 +221,7 @@ sl说明：
         if userinfo.level == 0:
             refuse += '，提升等级可以缩短冷却时间哦~'
         await mitu.finish(reply_header(event, refuse))  # 不用round主要是防止出现'还有0秒'的不科学情况
-    cd = cd_step(userinfo.level, 150)
+    cd = cd_step(userinfo.level, 480)
     flmt.start_cd(cd)  # 直接开始冷却，防止高频弹药击穿频率装甲，没返回图的话重新计算
 
     # 资金限制条款，注册了每日次数限制器
