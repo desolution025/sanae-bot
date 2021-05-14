@@ -57,7 +57,7 @@ class Blocker:
                 return False
             else:
                 add_time = datetime.strptime(block_ls[self.id]['add_time'], "%Y-%m-%d %H:%M:%S")
-                if datetime.now() - add_time < timedelta(hours=6):
+                if datetime.now() - add_time < timedelta(hours=2):
                     return False
                 else:
                     self.rm_block()
@@ -70,7 +70,7 @@ class Blocker:
         群与用户阻塞规则reason:
         0: 通用规则，违规封禁，暂不加入解封方式(实际上暂时没有针对群的违规理由，只有针对个人)
         1：用户规则，用户主动加入阻塞名单，暂不加入解封方式
-        2：用户规则，临时阻塞，6小时限制
+        2：用户规则，临时阻塞，2小时限制
         3: 群规则，由管理员使用off指令禁用，查询时仍然返回false，使用on指令主动解除
         可能会根据原因加入解封规则
         '''

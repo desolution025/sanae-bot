@@ -18,7 +18,7 @@ entry_manager = entry_and_exit.on_request(rule=comman_rule(GroupRequestEvent, su
 async def entry_group(bot: Bot, event: GroupRequestEvent):
     if event.user_id in SUPERUSERS:
         try:
-            await event.approve(bot)
+            await event.approve()
         except ActionFailed as err:
             logger.warning(err)
     else:
