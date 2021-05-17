@@ -15,7 +15,7 @@ class Reply_Called:
         self.recording_time = datetime.now()
 
     def check_expired(self):
-        if datetime.now() - self.recording_time > timedelta(minutes=30):
+        if datetime.now() - self.recording_time > timedelta(minutes=10):
             self.recording_time = datetime.now()
             self.called = {0}
 
