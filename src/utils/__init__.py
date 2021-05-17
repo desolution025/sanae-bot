@@ -3,7 +3,7 @@ import time
 from random import gauss
 from datetime import date
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 from base64 import b64encode
 import hmac
 
@@ -79,7 +79,7 @@ async def save_img(url: str, filepath: Union[str, Path]):
     return filepath
 
 
-def imgseg(src:Union[str, Path, bytes]) -> MessageSegment:
+def imgseg(src: Union[str, Path, bytes]) -> MessageSegment:
     """以本地文件图片或二进制数据创建一个可直接发送的MessageSegment
 
         确认不会被和谐的图片使用此方法，否则使用antishieding模块中的Image_Hander来处理
@@ -100,6 +100,22 @@ def imgseg(src:Union[str, Path, bytes]) -> MessageSegment:
     return MessageSegment.image(filestr)
 
 
+def mediaseg(src: Union[str, Path], type_: Optional[Literal['image', 'record', 'video']]=None) -> MessageSegment:
+    if type_ is None:
+        if isinstance(src, str):
+            src = Path(src)
+        if src.suffix in ('.jpg', '.png', '.jpeg', '.gif'):
+            return MessageSegment.image('file:///' + str(src.resolve()))
+        elif src.suffix in ('.mp3', '.aac', '.amr', '.wav', '.m4a'):
+            return MessageSegment.record('file:///' + str(src.resolve()))
+        elif src.suffix in ('.mp4', '.flv', '.m4v'):
+            return MessageSegment.video('file:///' + str(src.resolve()))
+        else:
+            logger.error(f'Unkwon or unsupported file format with {src}')
+    else:
+        return MessageSegment(type=type_, data={"file": 'file:///' + str(src.resolve())})
+
+
 RES_PATH = Path.cwd()/'res'
 
 
@@ -116,6 +132,9 @@ def link_res(filename: str, type_: str="image") -> MessageSegment:
     if type_ == "image":
         fp = RES_PATH/"images"/filename
         return imgseg(fp)  
+    else:
+        fp = RES_PATH/filename
+        return mediaseg(fp, type_)
 
 
 class FreqLimiter:

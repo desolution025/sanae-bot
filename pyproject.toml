@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sanae_bot"
-version = "0.1.7"
+version = "0.1.8"
 description = "A QQBot base on nonebot2"
 authors = ["AB_Solution"]
 license = "MIT"
@@ -19,6 +19,7 @@ DBUtils = "^2.0.1"
 nb-cli = "^0.4.1"
 nonebot-adapter-gocq = "^2.0.0-alpha.13"
 toml = "^0.10.2"
+nonebot-plugin-apscheduler = "^0.1.2"
 
 [tool.poetry.dev-dependencies]
 
