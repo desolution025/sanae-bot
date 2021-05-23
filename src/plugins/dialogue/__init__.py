@@ -15,7 +15,7 @@ from src.common import Bot, MessageEvent, GroupMessageEvent, PrivateMessageEvent
 from src.common.rules import sv_sw, full_match
 from src.common.log import logger
 from src.common.levelsystem import UserLevel
-from src.utils import reply_header, cgauss, PagingBar
+from src.utils import reply_header, cgauss, PagingBar, DailyNumberLimiter
 from .corpus import query, query_exists, plus_one, insertone, insertmany, update_prob, del_record
 
 
@@ -247,32 +247,23 @@ async def reply_checker(bot: Bot, event: MessageEvent, state: T_State) -> bool:
     logger.debug(f'Search question <{q}> in corpus...')
     gid = event.group_id if event.message_type == 'group' else 0
     result = query(q, gid)
+    logger.debug(f'当前获得了可触发的对话：{result}')
     if not result:
         return False
-    sid, answer, prob = choice(result)
-    if event.to_me or randint(0, 100) < prob:
-        if event.message_type == 'group':
-            name = event.sender.card or event.sender.nickname or event.get_user_id()
-        else:
-            name = event.sender.nickname or event.get_user_id()
-        state['answer'] = msglize(answer, name)
-        state['sid'] = sid
-        return True
-    else:
+
+    alter = [(s, a) for s, a, p in result if randint(0, 100) < p]  # 过滤出通过随机概率的对话
+    logger.debug(f'当前被过滤出的对话：{alter}')
+    if not alter:
         return False
-    #—————————————测试成功后使用上面那个——————————
-    # gen_num = randint(0, 100)
-    # if event.to_me:
-    #     logger.debug('to_me, 直接匹配')
-    #     state['answer'] = emojize(answer)
-    #     return True
-    # elif gen_num < prob:
-    #     logger.debug(f'匹配成功：q: {q}, prob: {prob}, 随机到: {gen_num}, 返回a: {answer}')
-    #     state['answer'] = emojize(answer)
-    #     return True
-    # else:
-    #     logger.debug(f'匹配失败：q: {q}, prob: {prob}, 随机到: {gen_num}, 返回a: {answer}')
-    #     return False     
+
+    sid, answer = choice(alter)  # 从可触发的对话中随机选择一个
+    if event.message_type == 'group':
+        name = event.sender.card or event.sender.nickname or event.get_user_id()
+    else:
+        name = event.sender.nickname or event.get_user_id()
+    state['answer'] = msglize(answer, name)
+    state['sid'] = sid
+    return True
 
 
 reply = qanda.on_message(rule=reply_checker, priority=3)
@@ -347,11 +338,7 @@ async def parse_qa(bot: Bot, event: MessageEvent, state: T_State):
     # if f'[CQ:at,qq={event.self_id}]' in event.raw_message:
     #     await learn.finish('我为什么要at我自己？不要这样啦，会有bug的::>_<::')
     for seg in Message(event.raw_message):
-        if seg.type == "at":
-            # 不可以at自己
-            if seg.data["qq"] == str(event.self_id):
-                await learn.finish('我为什么要at我自己？不要这样啦，会有bug的::>_<::')
-                logger.info('User is setting at botself, cancel learning')  # 检测一下type
+        if seg.type == "at" and seg.data["qq"] != str(event.self_id):
             # 强制非公开
             if state["public"]:
                 state["force_priv"] = True
@@ -374,25 +361,45 @@ async def get_q(bot: Bot, event: MessageEvent, state: T_State):
 @learn.got("answer", '请输入回答，发送[取消]退出本次学习')
 async def get_a(bot: Bot, event: MessageEvent, state: T_State):
     question = state["question"]
-    answer = state["answer"] if "answer" in state else await msg2str(Message(event.raw_message), localize_=True, bot=bot)
-    if len(question) > 255 or len(answer) > 255:
+    if "answer" in state:
+        answer = state["answer"]
+    else:
+        answer = Message(event.raw_message)
+        # 不可以at自己
+        for seg in answer:
+            if seg.type == 'at' and seg.data["qq"] == str(event.self_id):
+                await learn.finish('我为什么要at我自己？不要这样啦，会有bug的::>_<::')
+        answer = await msg2str(answer, localize_=True, bot=bot)
+
+    if len(question) > 3000 or len(answer) > 3000:
         await learn.finish(f'内容太长的对话{BOTNAME}记不住的说＞﹏＜')
     if answer:
         logger.debug(f'Current answer is [{answer}]')
         source = event.group_id if event.message_type == "group" and 'selflearn' not in state else 0
         public = 0 if state["force_priv"] else state["public"]
         creator = event.user_id if 'selflearn' not in state else event.self_id
-        logger.info(f'Insert record to corpus :\nquestion:[{question}]\nanswer:[{answer}]\npublic:{public}\ncreator:{creator}\nsource:{source}')
         result = insertone(question, answer, 70, creator, source, public)
         if isinstance(result, tuple):
             await learn.finish(f'记录已被用户{result[0]}在{result[1]}时创建')
         else:
-            exp = cgauss(5, 1, 1)
-            fund = cgauss(10, 1, 1)
-            user = UserLevel(event.user_id)
-            await user.expup(exp, bot, event)
-            user.turnover(fund)
-            msg = f'对话已记录， 赠送您{exp}exp 和 {fund}金币作为谢礼~'
+            logger.info(f'Insert record to corpus :\nquestion:[{question}]\nanswer:[{answer}]\npublic:{public}\ncreator:{creator}\nsource:{source}')
+
+            dlmt = DailyNumberLimiter(uid=event.user_id, func_name='学习', max_num=6)
+            if dlmt.check(close_conn=False):
+                if dlmt.count <= 3:
+                    exp_mu, fund_mu = 5, 10
+                else:
+                    exp_mu, fund_mu = 2, 3
+                exp = cgauss(exp_mu, 1, 1)
+                fund = cgauss(fund_mu, 1, 1)
+                user = UserLevel(event.user_id)
+                await user.expup(exp, bot, event)
+                user.turnover(fund)
+                msg = f'对话已记录， 赠送您{exp}exp 和 {fund}金币作为谢礼~'
+                dlmt.increase()
+            else:
+                dlmt.conn.close()
+                msg = '对话已记录'
             if state["force_priv"]:
                 msg += "\n(消息中含at信息，将强制设置公开性为群内限定)"
             msg += "\n﹟ 当前对话相对出现率默认设置为70，如需设置出现率可直接输入0-100范围内数字，否则可忽视本条说明"
@@ -470,7 +477,7 @@ async def parse_batch_qa(bot: Bot, event: MessageEvent, state: T_State):
     for seg in Message(event.raw_message):
         if seg.type == "at":
             # 不可以at自己
-            if seg.data["qq"] == event.self_id:
+            if seg.data["qq"] == str(event.self_id):
                 await learn.finish('我为什么要at我自己？不要这样啦，会有bug的::>_<::')
                 logger.debug(f'type{type(seg.data["qq"])}')  # 检测一下type
             # 强制非公开
@@ -496,7 +503,12 @@ async def batch_get_q(bot: Bot, event: MessageEvent, state: T_State):
 
 @batch_learn.got('answer')
 async def batch_get_a(bot: Bot, event: MessageEvent, state: T_State):
-    answer = await msg2str(Message(event.raw_message), localize_=True, bot=bot)
+    answer = Message(event.raw_message)
+    # 不可以at自己
+    for seg in answer:
+        if seg.type == 'at' and seg.data["qq"] == str(event.self_id):
+            await learn.finish('我为什么要at我自己？不要这样啦，会有bug的::>_<::')
+    answer = await msg2str(answer, localize_=True, bot=bot)
     if answer:
         state["answer"] = answer
     else:
@@ -534,12 +546,22 @@ async def batch_get_prob(bot: Bot, event: MessageEvent, state: T_State):
     creator = event.user_id if 'selflearn' not in state else event.self_id
     result = insertmany(state["question"].split('|'), state["answer"].split('|'), prob, creator, source, public)
     if isinstance(result, int):
-        exp = cgauss(5, 1, 1) + result - 1
-        fund = cgauss(10, 1, 1) + result - 1
-        user = UserLevel(event.user_id)
-        await user.expup(exp, bot, event)
-        user.turnover(fund)
-        msg = f'已记录{result}条对话，赠送您{exp}exp 和 {fund}金币作为谢礼~'
+        dlmt = DailyNumberLimiter(uid=event.user_id, func_name='学习', max_num=6)
+        if dlmt.check(close_conn=False):
+            if dlmt.count <= 3:
+                exp_mu, fund_mu = 5, 10
+            else:
+                exp_mu, fund_mu = 2, 3
+            exp = cgauss(exp_mu, 1, 1) + result - 1
+            fund = cgauss(fund_mu, 1, 1) + result - 1
+            user = UserLevel(event.user_id)
+            await user.expup(exp, bot, event)
+            user.turnover(fund)
+            msg = f'已记录{result}条对话，赠送您{exp}exp 和 {fund}金币作为谢礼~'
+            dlmt.increase()
+        else:
+            dlmt.conn.close()
+            msg = f'已记录{result}条对话'
         if state["force_priv"]:
             msg += "\n(消息中含at信息，将强制设置公开性为群内限定)"
     else:
@@ -595,21 +617,19 @@ async def handle_query(bot: Bot, event: MessageEvent, state: T_State):
     result.sort(key=sort_rule)
 
     # 可能在当前对话窗口出现的内容，把出现率是0、不在此群或私聊创建的非公开选项排除，用作计算绝对出现率
-    possible = [r for r in result if not (r.probability == 0 or (not r.public and r.source != gid))]
-    possible_count = len(possible)
+    # possible = [r for r in result if not (r.probability == 0 or (not r.public and r.source != gid))]
+    # possible_count = len(possible)
 
     result_ls = [f'''ID：{sid}
 回答：{msglize(answer, prestr=True)}
 相对出现率：{probability}%
-绝对出现率：{0 if not public and source != gid else round(probability / possible_count, 2)}%
-创建者：{creator}
-来自：{('群聊 ' + str(source)) if source else '私聊 '}
-公开性：{'公开' if public else '群内限定'}
+来自：{creator} 在 {('群' + str(source)) if source else '私聊'} 中创建的{'公开' if public else '群内限定'}对话
 创建时间：
 {creation_time}
 ────────────
 ''' for sid, answer, probability, creator, source, creation_time, public in result]
     # TODO: 把回复里的音频和视频分离出来变成'[音频][视频]'
+    # TODO：绝对出现率算出来
 
     record_bar = Pagination(*result_ls)
     if len(record_bar.rcd_ls) == 1:

@@ -1,9 +1,12 @@
 from datetime import datetime
+from typing import Optional
 from functools import wraps
 from inspect import signature
 
 from nonebot.matcher import Matcher
 from nonebot.typing import T_Handler, T_State
+from nonebot_adapter_gocq.message import MessageSegment
+from nonebot_adapter_gocq.exception import ActionFailed
 
 from src.common import Bot, MessageEvent
 from src.utils import reply_header, FreqLimiter, DailyNumberLimiter
@@ -83,34 +86,84 @@ class UserLevel:
             self.total_sign = 0
         botdb.close()
 
-    async def levelup(self, bot: Bot, event: MessageEvent, botdb: QbotDB):
+    async def levelup(self, bot: Bot, event: Optional[MessageEvent], botdb: QbotDB, *, gid: Optional[int]=None):
         """经验值足够时提升等级并发送升级提醒
 
         提升等级时会把上一个等级的经验值减去
 
         Args:
             bot (Bot): 发送消息的bot
-            event (MessageEvent): 消息事件
+            event (Optional[MessageEvent]): 消息事件
             botdb (QbotDB): 数据库连接对象，由上一层函数传入
+            gid (Optional[int]): 没有event传入时应指定此参数来指定发送的地点. Defaults to None.
         """
 
         self.exp -= exp_step(self.level)
         self.level += 1
         gndfund = self.level * 10 + 10
         self.fund += gndfund
-        if event.message_type == 'group':
-            name = event.sender.card or event.sender.nickname or event.get_user_id()
-        else:
-            name = event.sender.nickname or event.get_user_id()
-        botdb.update('update userinfo set level=%s, exp=%s, fund=%s where qq_number=%s', (self.level, self.exp, self.fund, self.uid,))
+        await self.ch_lv_notice(bot, event, botdb, up=True, gid=gid, gndfund=gndfund)
 
-        await bot.send(event, message=f'{name}升级到lv{self.level}了！获得{gndfund}金币~', at_sender=True)
+        botdb.update('update userinfo set level=%s, exp=%s, fund=%s where qq_number=%s', (self.level, self.exp, self.fund, self.uid,))
         if self.exp >= exp_step(self.level):
-            await self.levelup(bot, event, botdb)
+            await self.levelup(bot, event, botdb, gid=gid)
         else:
             return
 
-    async def expup(self, value: int, bot: Bot, event: MessageEvent):
+    async def leveldown(self, bot: Bot, event: Optional[MessageEvent], botdb: QbotDB, *, gid: Optional[int]=None):
+        """经验值下降时发送降级提醒
+
+        Args:
+            bot (Bot): 发送消息的bot
+            event (Optional[MessageEvent]): 消息事件
+            botdb (QbotDB): 数据库连接对象，由上一层函数传入
+            gid (Optional[int], optional): 没有event传入时应指定此参数来指定发送的地点. Defaults to None.
+        """
+        self.exp += exp_step(self.level - 1)
+        self.level -= 1
+        await self.ch_lv_notice(bot, event, botdb, up=False, gid=gid)
+
+        botdb.update('update userinfo set level=%s, exp=%s where qq_number=%s', (self.level, self.exp, self.uid,))
+
+        if self.exp < 0 and self.level > 0:
+            await self.leveldown(bot, event, botdb, gid=gid)
+        else:
+            return
+
+    async def ch_lv_notice(self, bot: Bot, event: Optional[MessageEvent], botdb: QbotDB, up: bool=True, *, gid: Optional[int]=None, gndfund: Optional[int]=None):
+        """等级变动提醒
+
+        Args:
+            bot (Bot): 发送消息的bot对象
+            event (Optional[MessageEvent]): 主动触发的事件对象，有可能是由于其它事件而被动触发，则此处为None
+            botdb (QbotDB): 数据库连接对象，应有上一层调用函数中传入
+            up (bool, optional): 是否是升级，决定发送的对话. Defaults to True.
+            gid (Optional[int], optional): event为None时则必须传入int型参数，作为发送事件的目标群. Defaults to None.
+            gndfund (Optional[int], optional): up为True时应传入此参数以发送升级奖励的具体数字提醒，不传入也可二次计算. Defaults to None.
+        """
+
+        msg = '{name}升级到lv{level}了！获得{gndfund}金币~' if up else '{name}的等级降到{level}了，好遗憾的说(憋笑~~)'
+
+        if event is not None:
+            if event.message_type == 'group':
+                name = event.sender.card or event.sender.nickname or event.get_user_id()
+            else:
+                name = event.sender.nickname or event.get_user_id()
+            gndfund = gndfund if gndfund is not None else self.level * 10 + 10
+            await bot.send(event, message=msg.format(name=name, level=self.level, gndfund=gndfund), at_sender=True)
+        else:
+            assert isinstance(gid, int), '未传入event参数时必须获得int型的gid参数'
+            try:
+                member = await bot.get_group_member_info(group_id=gid, user_id=self.uid)
+            except ActionFailed as e:
+                logger.warning(f'可能是已经退群的群员: group: {gid} qq: {self.uid}, error: {e}')
+                await bot.send_group_msg(group_id=gid, message=f'本应该在群内的成员({self.uid})貌似获取不到了，是不是退群了呢？没有的话请联系维护组查看一下出问题的原因哦~')
+                return
+            name = member['card'] or member['nickname'] or str(self.uid)
+
+            await bot.send_group_msg(group_id=gid, message=MessageSegment.text(msg.format(name=name, level=self.level)) + MessageSegment.at(qq=self.uid))
+
+    async def expup(self, value: int, bot: Bot, event: Optional[MessageEvent]=None, *, gid: Optional[int]=None):
         """提升经验值
         
         需要传入bot、event参数给升级事件发送消息用，调用升级时传出conn对象更新数据用
@@ -118,35 +171,65 @@ class UserLevel:
         Args:
             value (int): 提升的经验
             bot (Bot): 传给升级事件的Bot对象
-            event (MessageEvent): 传给升级事件的Event对象
+            event (Optional[MessageEvent]): 传给升级事件的Event对象，不传入时则必须指定gid来确定发送消息的群
         """
         self.exp += value
         with QbotDB() as botdb:
             if self.exp >= exp_step(self.level): # 检测经验值是否超过本级上限，是则升级
-                await self.levelup(bot, event, botdb)
+                await self.levelup(bot, event, botdb, gid=gid)
+            elif self.exp < 0 and self.level > 0:  # 只有等级大于0的时候才能降级，否则直接往下扣 
+                await self.leveldown(bot, event, botdb, gid=gid)
             else:
                 botdb.update('update userinfo set `exp`=%s where qq_number=%s;', (self.exp, self.uid,))
 
-    def turnover(self, value: int):
+    def turnover(self, value: int, *, check_overdraft: bool=True):
         """花费资金，持有资金小于要花费的金额时提示透支
 
         Args:
             value (int): 资金变动值，向外花费资金应该为负数
+            check_overdraft (bool): 是否检查透支，如果不检查则无论如何都减去金币，资金可能变为负.Default is True.
 
         Returns:
             tuple[int, bool]: 执行后的资金以及是否透支
         """
-        if self.fund + value > 0:
-            self.fund += value
-            overdraft = False
+        if check_overdraft:
+            if self.fund + value > 0:
+                self.fund += value
+                overdraft = False
 
-            with QbotDB() as botdb:
-                botdb.update('update userinfo set fund=%s where qq_number=%s', (self.fund, self.uid))
+                with QbotDB() as botdb:
+                    botdb.update('update userinfo set fund=%s where qq_number=%s', (self.fund, self.uid))
+            else:
+                overdraft = True
         else:
-            overdraft = True
+            self.fund += value
+            with QbotDB() as botdb:
+                    botdb.update('update userinfo set fund=%s where qq_number=%s', (self.fund, self.uid))
+            overdraft = self.fund < 0
 
         return self.fund, overdraft
 
+
+def is_user(uid: int) -> bool:
+    """查询是否是使用过bot的用户"""
+
+    with QbotDB() as qb:
+        result = qb.queryone("SELECT 1 FROM userinfo WHERE qq_number=%s AND (`exp`>0 OR `level`>0) LIMIT 1;", (uid,))
+    return bool(result)
+
+def filter_users(*uids):
+    """过滤出使用过bot的用户"""
+
+    with QbotDB() as qb:
+        users = []
+        if len(uids) > 1:
+            result = qb.queryall(f"SELECT qq_number FROM userinfo WHERE qq_number in {tuple(uids)}")
+            if result:
+                users = [i[0] for i in result]
+        else:
+            if is_user(uids[0]):
+                users = [uids[0]]
+    return users
 
 class FuncLimiter:
     """集成各种条件的功能限制器
