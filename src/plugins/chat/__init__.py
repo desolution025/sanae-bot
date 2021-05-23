@@ -71,6 +71,7 @@ async def prob_handle(bot: Bot, event: GroupMessageEvent, state: T_State):
 # 在这个里面的就不要触发了
 BAN_EXPRESSION = ('姑姑请求场外支援呀',
                 '这个…我真的听不懂',
+                '不明白你说的什么意思',
                 '尽管看不懂，但姑姑能够理解你此刻复杂的心情~',
                 '哈哈哈，看不懂',
                 '你好， 我是腾讯小龙女，请把你的问题告诉我吧',
