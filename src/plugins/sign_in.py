@@ -38,6 +38,9 @@ def progress_bar(value: int, max: int) -> str:
     elif pct > 0.95 and pct <= 0.975:
         fill = '█' * 9 + '▌'
         empty = ''
+    elif pct < 0:
+        fill = ''
+        empty = '░' * 10
     else:
         bk_amt = round(pct * 10)
         fill = '█' * round(bk_amt)
@@ -85,13 +88,14 @@ async def querylevel(bot: Bot, event: MessageEvent):
         name = event.sender.card or event.sender.nickname
     else:
         name = event.sender.nickname
-    msg = ' {name}\n 等级：Lv.{level}\n{pg_bar}\n EXP:{exp}/{max}\n 金币:{fund} \n 最后一次签到：\n {last_sign}'.format(
+    msg = ' {name}\n 等级：Lv.{level}\n{pg_bar}\n EXP:{exp}/{max}\n 金币:{fund}\n 共签到：{total_sign}次\n 最后一次签到：\n {last_sign}'.format(
         name = name,
         level = user.level,
         pg_bar = progress_bar(user.exp, exp_step(user.level)),
         exp = user.exp,
         max = exp_step(user.level),
         fund = user.fund,
+        total_sign = user.total_sign,
         last_sign = user.last_sign if user.last_sign > datetime(2020, 11, 27) else '还未签到过'
         )
     await query_level.finish(msg)
