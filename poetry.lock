@@ -113,7 +113,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "cn2an"
-version = "0.5.9"
+version = "0.5.11"
 description = "Convert Chinese numerals and Arabic numerals."
 category = "main"
 optional = false
@@ -823,8 +823,8 @@ click = [
     {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
 ]
 cn2an = [
-    {file = "cn2an-0.5.9-py3-none-any.whl", hash = "sha256:3673e8640e822d8880c69934630e95f37f86c4052cdb92e414340f7200e15a85"},
-    {file = "cn2an-0.5.9.tar.gz", hash = "sha256:71a4bc1dd20c126a5907f3a734a2dd5ba16678793d757ed9587a3b26802b17cb"},
+    {file = "cn2an-0.5.11-py3-none-any.whl", hash = "sha256:c56786b2847c149c2761a01e955c0b77b4273c8d8919a7f6c0b91853c555f2ee"},
+    {file = "cn2an-0.5.11.tar.gz", hash = "sha256:c008f0aa93e5c6d840cdee83fe68835e63a7a2c834503c251a3e603ff835d60c"},
 ]
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},

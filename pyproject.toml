@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sanae_bot"
-version = "0.1.9"
+version = "0.1.10"
 description = "A QQBot base on nonebot2"
 authors = ["AB_Solution"]
 license = "MIT"
