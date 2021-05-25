@@ -72,7 +72,7 @@ async def check_fortune(bot: Bot, event: MessageEvent):
             user = UserLevel(event.user_id)
             await user.expup(exp, bot, event)
             user.turnover(fund)
-            await fortune.finish('Emmmm，因为占卜的师傅如果不是有别的什么目的的话,为了讨好前来占卜的人都会尽量说是吉签嘛，抽到这个凶签这种小概率事件，某种意义上这才是奇迹真正应该有的样子'
+            await fortune.finish('Emmmm，因为占卜的师傅如果不是有别的什么目的的话,为了讨好前来占卜的人都会尽量说是吉签嘛\n    抽到这个凶签这种小概率事件，某种意义上这才是奇迹真正应该有的样子'
             f'\n{name}获得了{exp}exp和{fund}资金', at_sender=True)
 
         elif rp == 3 and is_user(event.user_id):
@@ -115,7 +115,7 @@ async def check_fortune(bot: Bot, event: MessageEvent):
 
         elif rp == 5 and is_user(event.user_id):
             if event.message_type == 'group':
-                await fortune.finish('啊~获得了可以增加亲密度的签，但是这个只有私聊抽中的时候才有效哦~残念', at_sender=True)
+                await fortune.finish('啊~获得了可以增加亲密度的签，但是这个签只有私聊抽中的时候才有效哦~残念', at_sender=True)
             else:
                 exp = randint(25, 40)
                 fund = randint(40, 50)
