@@ -192,7 +192,7 @@ class UserLevel:
         Returns:
             tuple[int, bool]: 执行后的资金以及是否透支
         """
-        if check_overdraft:
+        if check_overdraft and value < 0:
             if self.fund + value > 0:
                 self.fund += value
                 overdraft = False
