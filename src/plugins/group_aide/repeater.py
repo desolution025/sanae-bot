@@ -43,7 +43,7 @@ def store_talk(bot: Bot, event:GroupMessageEvent, state: T_State):
         gr['times'] += 1
         gr['uid_ls'].add(event.user_id)
         logger.debug(f'{str(cur_msg)}')
-        if event.user_id != event.self_id:  # 可能是自己发送的消息不能触发自己复读
+        if event.self_id not in gr['uid_ls'] and event.user_id != event.self_id:  # 自己已在消息记录中，也可能是自己发送的消息，不能触发自己复读
             c = random()
             r = (1 - repeat_rate) ** gr['times']
             # if random() > (1 - repeat_rate) ** gr['times']:
