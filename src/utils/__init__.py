@@ -137,10 +137,10 @@ def link_res(filename: str, type_: str="image") -> MessageSegment:
         MessageSegment: 可直接发送的消息段
     """
     if type_ == "image":
-        fp = RESPATH/"images"/filename
+        fp = Path(RESPATH)/"images"/filename
         return imgseg(fp)  
     else:
-        fp = RESPATH/filename
+        fp = Path(RESPATH)/filename
         return mediaseg(fp, type_)
 
 
