@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Optional, Union
 from collections import namedtuple, defaultdict
-import re
 import asyncio
 from urllib.request import urlretrieve
 from random import choice, randint
@@ -11,7 +10,7 @@ from imghdr import what
 from nonebot import MatcherGroup
 from nonebot.message import handle_event
 
-from src.common import Bot, MessageEvent, GroupMessageEvent, PrivateMessageEvent, Message, MessageSegment, T_State, CANCEL_EXPRESSION, SUPERUSERS, BOTNAME
+from src.common import Bot, MessageEvent, GroupMessageEvent, PrivateMessageEvent, Message, MessageSegment, T_State, CANCEL_EXPRESSION, SUPERUSERS, BOTNAME, RESPATH
 from src.common.rules import sv_sw, full_match
 from src.common.log import logger
 from src.common.levelsystem import UserLevel
@@ -89,7 +88,7 @@ async def guide_batch_learn(bot: Bot):
 #———————————————————————————————————————
 
 
-CORPUS_IMAGES_PATH = (Path(r'.\res')/'images'/'corpus_imgs').resolve()
+CORPUS_IMAGES_PATH = (Path(RESPATH)/'corpus_imgs').resolve()
 
 
 def localize(url: str, filename: str, failed_times: int=0) -> Optional[str]:
@@ -153,7 +152,7 @@ async def msg2str(message: Message, *, localize_: bool=False, bot: Optional[Bot]
                 realname = localize(imginfo["url"], seg.data["file"])
                 if not realname:
                     return None
-                strcq += f'[CQ:image,file=file:///{{res_path}}\\{realname}]'
+                strcq += f'[CQ:image,file=file:///{{res_path}}/{realname}]'
         else:
             strcq += str(seg)
     return strcq
@@ -266,7 +265,7 @@ async def reply_checker(bot: Bot, event: MessageEvent, state: T_State) -> bool:
     return True
 
 
-reply = qanda.on_message(rule=reply_checker, priority=3)
+reply = qanda.on_message(rule=sv_sw('问答对话', plugin_usage)&reply_checker, priority=3)
 
 
 @reply.handle()

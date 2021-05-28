@@ -2,11 +2,11 @@ from random import choice, shuffle
 from pathlib import Path
 import asyncio
 
-from nonebot import require, get_bots, MatcherGroup
+from nonebot import require, get_bots
 from nonebot_adapter_gocq.exception import ActionFailed
 
-from src.common import Bot, GroupMessageEvent, MessageSegment, logger
-from src.common.rules import group_func_off, sv_sw, func_ls, comman_rule
+from src.common import logger, RESPATH
+from src.common.rules import group_func_off, sv_sw
 from src.common.verify import Enable_Group, Group_Blocker
 from src.utils import mediaseg
 
@@ -31,7 +31,7 @@ TEATIME_NOTICE = (
 )
 
 
-TEATIME_ATTACH = [mediaseg(f) for f in Path('./res/tea_time').glob('*.*')]  # 随机附加在后面一个媒体文件
+TEATIME_ATTACH = [mediaseg(f) for f in (Path(RESPATH)/'tea_time').glob('*.*')]  # 随机附加在后面一个媒体文件
 
 
 scheduler = require('nonebot_plugin_apscheduler').scheduler

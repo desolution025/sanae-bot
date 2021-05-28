@@ -5,7 +5,7 @@ from asyncio import sleep as asleep
 from nonebot.plugin import on_message
 from nonebot_adapter_gocq.exception import ActionFailed
 
-from src.common import Bot, MessageEvent, logger, BOTNAME, MessageSegment
+from src.common import Bot, MessageEvent, logger, BOTNAME, MessageSegment, RESPATH
 from src.common.rules import sv_sw, full_match
 from src.common.levelsystem import UserLevel, is_user, filter_users
 from src.utils import imgseg, DailyNumberLimiter
@@ -16,7 +16,7 @@ plugin_name = '运势'
 plugin_usage = """[今日运势] 没日一抽，运气好的话当天可能出门被撞到异世界当美少女"""
 
 
-assets_folder = (Path(__file__).parent/'images'/'fortune')
+assets_folder = Path(RESPATH)/'fortune'
 sticks = [i for i in  assets_folder.glob('*.[jp][pn]*g')]
 
 

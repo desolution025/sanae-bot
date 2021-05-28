@@ -12,6 +12,7 @@ from imghdr import what
 from nonebot_adapter_gocq.event import MessageEvent
 from nonebot_adapter_gocq.message import MessageSegment
 
+from src.common.easy_setting import RESPATH
 from src.common.dbpool import QbotDB
 from src.common.log import logger
 
@@ -101,6 +102,15 @@ def imgseg(src: Union[str, Path, bytes]) -> MessageSegment:
 
 
 def mediaseg(src: Union[str, Path], type_: Optional[Literal['image', 'record', 'video']]=None) -> MessageSegment:
+    """生成图片、语音或短视频的MessageSegment
+
+    Args:
+        src (Union[str, Path]): 路径，会自动转化绝对路径
+        type_ (Optional[Literal[, optional): 文件类型，如果不指定的话会依据文件后缀来判断是什么类型. Defaults to None.
+
+    Returns:
+        MessageSegment: 直接可发送的消息段
+    """
     if type_ is None:
         if isinstance(src, str):
             src = Path(src)
@@ -116,9 +126,6 @@ def mediaseg(src: Union[str, Path], type_: Optional[Literal['image', 'record', '
         return MessageSegment(type=type_, data={"file": 'file:///' + str(src.resolve())})
 
 
-RES_PATH = Path.cwd()/'res'
-
-
 def link_res(filename: str, type_: str="image") -> MessageSegment:
     """快速链接本地库资源，输入文件名直接获得资源生成的MessageSegment
 
@@ -130,10 +137,10 @@ def link_res(filename: str, type_: str="image") -> MessageSegment:
         MessageSegment: 可直接发送的消息段
     """
     if type_ == "image":
-        fp = RES_PATH/"images"/filename
+        fp = RESPATH/"images"/filename
         return imgseg(fp)  
     else:
-        fp = RES_PATH/filename
+        fp = RESPATH/filename
         return mediaseg(fp, type_)
 
 

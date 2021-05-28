@@ -45,6 +45,7 @@ class EasySetting(BaseSettings):
     nickname: Optional[Sequence[str]]
     debug: bool
     cancel_expression: Sequence[str]
+    respath: str
     meitupath: str
     setupath: str
     friendrequestcodesalt: str
@@ -61,11 +62,14 @@ BOTNAMES = easy_setting.nickname
 BOTNAME = easy_setting.nickname[0]
 DEBUG = easy_setting.debug
 CANCEL_EXPRESSION = easy_setting.cancel_expression
+RESPATH = easy_setting.respath
 MEITUPATH = easy_setting.meitupath
 SETUPATH = easy_setting.setupath
 FRIENDREQUESTCODESALT = easy_setting.friendrequestcodesalt
 
 
 if __name__ == "__main__":
-    print(BOT_VERSION)
-    print(SUPERUSERS, BOTNAME, DEBUG, MEITUPATH, SETUPATH, FRIENDREQUESTCODESALT)
+    # print(BOT_VERSION)
+    # print(SUPERUSERS, BOTNAME, DEBUG, RESPATH, MEITUPATH, SETUPATH, FRIENDREQUESTCODESALT)
+    print(RESPATH)
+    print(SETUPATH)
