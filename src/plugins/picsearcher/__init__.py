@@ -3,11 +3,11 @@ import traceback
 from typing import Dict
 
 from aiohttp.client_exceptions import ClientError
-from nonebot import on_command, MatcherGroup
+from nonebot import on_command
 from nonebot_adapter_gocq.exception import ActionFailed
 
-from src.common import MessageSegment, logger, Bot, MessageEvent, T_State, GroupMessageEvent, Message
-from src.common.rules import sv_sw, comman_rule
+from src.common import MessageSegment, logger, Bot, MessageEvent, T_State, Message
+from src.common.rules import sv_sw
 from src.utils import reply_header
 
 from .ex import get_des as get_des_ex
@@ -25,7 +25,10 @@ plugin_usage = """
 如果有恢复的还会添加搜索模式
 ———————
 [搜图 图片]从SauceNao和ascii2d搜图源
-[上一张是什么] [搜上一张图]可以直接搜索刚刚发的图是啥
+手机用户不方便同时发送文字与图片可先发送[搜图]，出现文字提示之后再发送图片
+
+※※ 如果遇到发送图片却没响应的情况，请确认图片是否不合规造成系统吞图
+确认方式：让其它群友截图看对方视角有没有发送成功，或者切换一台设备观看自己发言记录(比如手机发了之后用电脑看看刚才自己的图显示出来没)
 """.strip()
 
 
@@ -117,40 +120,40 @@ async def check_pic(bot: Bot, event: MessageEvent, state: T_State) -> bool:
     return False
 
 
-easy_pick = MatcherGroup(type='message', rule=sv_sw('搜图')&comman_rule(GroupMessageEvent)&check_pic, block=False, priority=2)
+# easy_pick = MatcherGroup(type='message', rule=sv_sw('搜图')&comman_rule(GroupMessageEvent)&check_pic, block=False, priority=2)
 
 
-notice_pic =easy_pick.on_message()
+# notice_pic =easy_pick.on_message()
 
 
-@notice_pic.handle()
-async def handle_pic(bot: Bot, event: GroupMessageEvent, state: T_State):
-    try:
-        group_id: str = str(event.group_id)
-        pic_map.update({group_id: state["url"]})
-    except AttributeError:
-        pass
+# @notice_pic.handle()
+# async def handle_pic(bot: Bot, event: GroupMessageEvent, state: T_State):
+#     try:
+#         group_id: str = str(event.group_id)
+#         pic_map.update({group_id: state["url"]})
+#     except AttributeError:
+#         pass
 
 
-previous = easy_pick.on_command("上一张图是什么", aliases={"搜上一张图"})
+# previous = easy_pick.on_command("上一张图是什么", aliases={"搜上一张图"})
 
 
-@previous.handle()
-async def handle_previous(bot: Bot, event: GroupMessageEvent, state: T_State):
-    await bot.send(event=event, message="让我看看这个图")
-    try:
-        url: str = pic_map[str(event.group_id)]
-        result = MessageSegment.text('————>SauceNao<————')
-        async for msg in get_des(url, "nao"):
-            if not msg:
-                await previous.finish('没有搜到的说~')
-            result += msg + '────────────\n'
-        result = Message(str(result).rstrip('────────────\n'))
-        await previous.send(reply_header(event, msg))
-    except (IndexError, ClientError):
-        logger.exception(traceback.format_exc())
-        await previous.finish("啊，搜索中遇到了不明错误O_O")
-    except KeyError:
-        await previous.finish(reply_header(event, "没有图啊QAQ"))
-    except ActionFailed:
-        await previous.finish('虽然搜到了，但是发送结果途中遭遇拦截，可稍后再试一试')
+# @previous.handle()
+# async def handle_previous(bot: Bot, event: GroupMessageEvent, state: T_State):
+#     await bot.send(event=event, message="让我看看这个图")
+#     try:
+#         url: str = pic_map[str(event.group_id)]
+#         result = MessageSegment.text('————>SauceNao<————')
+#         async for msg in get_des(url, "nao"):
+#             if not msg:
+#                 await previous.finish('没有搜到的说~')
+#             result += msg + '────────────\n'
+#         result = Message(str(result).rstrip('────────────\n'))
+#         await previous.send(reply_header(event, msg))
+#     except (IndexError, ClientError):
+#         logger.exception(traceback.format_exc())
+#         await previous.finish("啊，搜索中遇到了不明错误O_O")
+#     except KeyError:
+#         await previous.finish(reply_header(event, "没有图啊QAQ"))
+#     except ActionFailed:
+#         await previous.finish('虽然搜到了，但是发送结果途中遭遇拦截，可稍后再试一试')
