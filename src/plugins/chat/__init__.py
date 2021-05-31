@@ -126,7 +126,11 @@ chat = chatbot.on_message(rule=sv_sw(plugin_name, plugin_usage)&chat_checker, pr
 async def talk(bot: Bot, event: MessageEvent, state: T_State):
     q = state['q'] if 'q' in state else event.message.extract_plain_text()
     if "reply" not in state:
-        reply, confidence = ai_chat(q)
+        chat_request = ai_chat(q)
+        if chat_request is not None:
+            reply, confidence = chat_request  # TODO: 根据置信度换成别的语句
+        else:
+            await chat.finish()
     else:
         reply: str = state["reply"]
 
