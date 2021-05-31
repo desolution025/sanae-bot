@@ -144,12 +144,12 @@ class UserLevel:
 
         msg = '{name}升级到lv{level}了！获得{gndfund}金币~' if up else '{name}的等级降到{level}了，好遗憾的说(憋笑~~)'
 
+        gndfund = gndfund if gndfund is not None else self.level * 10 + 10
         if event is not None:
             if event.message_type == 'group':
                 name = event.sender.card or event.sender.nickname or event.get_user_id()
             else:
                 name = event.sender.nickname or event.get_user_id()
-            gndfund = gndfund if gndfund is not None else self.level * 10 + 10
             await bot.send(event, message=msg.format(name=name, level=self.level, gndfund=gndfund), at_sender=True)
         else:
             assert isinstance(gid, int), '未传入event参数时必须获得int型的gid参数'
@@ -161,7 +161,7 @@ class UserLevel:
                 return
             name = member['card'] or member['nickname'] or str(self.uid)
 
-            await bot.send_group_msg(group_id=gid, message=MessageSegment.text(msg.format(name=name, level=self.level)) + MessageSegment.at(qq=self.uid))
+            await bot.send_group_msg(group_id=gid, message=MessageSegment.text(msg.format(name=name, level=self.level, gndfund=gndfund)) + MessageSegment.at(qq=self.uid))
 
     async def expup(self, value: int, bot: Bot, event: Optional[MessageEvent]=None, *, gid: Optional[int]=None):
         """提升经验值
