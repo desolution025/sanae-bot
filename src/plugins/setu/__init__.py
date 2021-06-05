@@ -8,11 +8,9 @@ from random import choice
 import httpx
 from PIL import UnidentifiedImageError
 from cn2an import cn2an
-from nonebot import on_regex, on_keyword, on_command
-from nonebot.rule import to_me
-from nonebot.permission import SUPERUSER
+from nonebot import on_regex, on_keyword
 from nonebot_adapter_gocq.bot import Bot
-from nonebot_adapter_gocq.event import MessageEvent, PrivateMessageEvent
+from nonebot_adapter_gocq.event import MessageEvent
 from nonebot.typing import T_State
 from nonebot_adapter_gocq.message import MessageSegment
 from nonebot_adapter_gocq.exception import NetworkError, AdapterException
@@ -24,7 +22,7 @@ from src.utils import imgseg, reply_header, FreqLimiter, DailyNumberLimiter
 from src.utils.antiShielding import Image_Handler
 from src.common.easy_setting import MEITUPATH, SETUPATH, BOTNAME
 from src.common.levelsystem import cd_step, UserLevel, FuncLimiter
-from .lolicon import get_setu, get_1200, show_quota
+from .lolicon import get_setu, get_1200
 from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 
 
@@ -144,7 +142,7 @@ sl说明：
     failed_time = 0
     while failed_time < 5:
         try:
-            result = await get_setu(kwd, r18, num, True)
+            result = await get_setu(kwd, r18, num)
             break
         except BaseException as e:
             failed_time += 1
@@ -291,22 +289,10 @@ sl说明：
 
     elif result['code'] == 404:
         await setu.send(msg + MessageSegment.text(f'没有找到{kwd}的涩图，试试其他标签吧~'))
-    elif result['code'] == 429:
-        await setu.send(msg + MessageSegment.text('所有API额度已用尽，群友们是真的很能冲呢~'))
-    elif result['code'] == 401:
-        await setu.send(msg + MessageSegment.text('APIKEY貌似出了问题，请联系维护组检查'))
     else:
         await setu.send(msg + MessageSegment.text('获取涩图失败，请稍后再试'))
     flmt.start_cd(0)
     dlmt.conn.close()
-
-
-quota_query = on_command('lolicon额度', rule=to_me(), permission=SUPERUSER)  # 查询当前API状态
-
-
-@quota_query.handle()
-async def report_quota(bot: Bot):
-    await quota_query.finish(show_quota())
 
 
 #—————————————————杂项图片API—————————————————————

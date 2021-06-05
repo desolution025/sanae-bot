@@ -1,6 +1,3 @@
-from configparser import ConfigParser
-from pathlib import Path
-from itertools import cycle
 import httpx
 try:
     from src.common import logger
@@ -8,30 +5,7 @@ except ImportError:
     from loguru import logger
 
 
-cfg = ConfigParser()
-cfg.read(Path(__file__).parent/"setu_config.ini")
-API = 'https://api.lolicon.app/setu/'
-APIKEYS = dict(cfg.items('keys'))
-
-
-api_cs = cycle(range(len(APIKEYS)))  # 循环索引
-def switch_key():
-    global cur_index
-    global cur_key
-    cur_index = next(api_cs) + 1  # 目前配置内key索引是从1开始的
-    cur_key = APIKEYS[f'key{cur_index}']
-    logger.info(f'Switch to the {cur_index} (st|nd|th) APIKEY of lolicon: {cur_key}')
-
-switch_key() # 确定首次使用的APIKEY
-api_quota = {}  # 当前API剩余额度存储在这个里面，用来实时查询剩余数量
-"""
-结构：
-api_quota: {
-    'cur_index': int,
-    'quota': int,
-    'quota_min_ttl': int
-}
-"""
+API = 'https://api.lolicon.app/setu/v1'
 
 
 async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) -> dict:
@@ -73,37 +47,21 @@ async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) ->
             ``code``:{
                 ``-1``: 内部错误，请向 i@loli.best 反馈
                 ``0``: 成功
-                ``401``: APIKEY 不存在或被封禁
-                ``403``: 由于不规范的操作而被拒绝调用
                 ``404``: 找不到符合关键字的色图
-                ``429``: 达到调用额度限制
             }
 
     """
     async with httpx.AsyncClient() as client:
-        switch_times = 0
-        while switch_times < len(APIKEYS) - 1:  # 循环切换API，如果全都用光了的话只好原路返回了
-            params = {
-                    'apikey': cur_key,
-                    'r18': r18,
-                    'keyword': kwd,
-                    'num': num,
-                    'size1200': size1200
-                    }
-            resp = await client.get(API, params=params, timeout=120)
-            result = resp.json()
-            logger.debug(result)
-            global api_quota
-            api_quota = {
-                'cur_index': cur_index,
-                'quota': result['quota'],
-                'quota_min_ttl': result['quota_min_ttl'],
-            }  # 记录当前剩余信息
-            if result['code'] == 429:
-                switch_key()
-                switch_times += 1
-            else:
-                break
+        params = {
+                'r18': r18,
+                'keyword': kwd,
+                'num': num,
+                'size1200': size1200
+                }
+        resp = await client.get(API, params=params, timeout=120)
+        result = resp.json()
+        logger.debug(result)
+
     return result
 
 
@@ -122,14 +80,6 @@ def get_1200(url: str) -> str:
         master1200缩略图url
     """
     return url.replace('original', 'master')[:-4] + '_master1200.jpg'
-
-
-def show_quota():
-    if api_quota:
-        msg = f"当前使用的API索引：{api_quota['cur_index']}\n当前API剩余额度：{api_quota['quota']}\n最后一次调用时剩余恢复{api_quota['quota_min_ttl']}秒" 
-    else:
-        msg = '上次重启之后还未调用过API'
-    return msg
 
 
 if __name__ == "__main__":
