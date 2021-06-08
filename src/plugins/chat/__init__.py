@@ -4,7 +4,7 @@ from pathlib import Path
 
 from nonebot import MatcherGroup
 
-from src.common import Bot, MessageEvent, GroupMessageEvent, T_State, logger, BOTNAME, BOTNAMES
+from src.common import Bot, MessageEvent, GroupMessageEvent, T_State, logger, BOTNAME, BOTNAMES, SUPERUSERS
 from src.common.rules import sv_sw, comman_rule
 from src.utils import reply_header
 from .tccli_nlp import ai_chat
@@ -68,6 +68,10 @@ async def prob_handle(bot: Bot, event: GroupMessageEvent, state: T_State):
         await set_prob.finish(reply_header(event, f'{BOTNAME}突然遭遇了不明袭击，没有记录下来，请尽快联系维护组修好我T_T'))
 
 
+# 过滤的语句
+BAN_MESSAGE = ("早苗已经吃饱了~早苗没有幽幽子那么能吃拉~！\n早苗的每顿饭时段为 6、12、17、23",)
+
+
 # 在这个里面的就不要触发了
 BAN_EXPRESSION = ('姑姑请求场外支援呀',
                 '这个…我真的听不懂',
@@ -86,21 +90,24 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
     否则真实触发率为 群设置聊天触发率 * 返回信息的可信度
     """
     msg = event.message.extract_plain_text()
-    if not msg or len(msg) > 50:
+    if not msg or len(msg) > 50 or event.raw_message in BAN_MESSAGE:
         return False
     # 回复别人的对话不会触发
     for seg in event.message:
         if seg.type == 'at' and seg.data["qq"] not in (str(event.self_id), 'all') or event.reply and event.reply.sender.user_id != event.self_id:
             return False
     if event.message_type == 'group' and not event.is_tome():
+        nothing_to_bot = True  # 对话中带有bot名字，归到到下面一起判断
         for name in BOTNAMES:
             if name in msg:
                 person = '你' if msg.endswith(BOTNAME) else ''  # 名称在中间的时候替换成第二人称，名称在末尾时直接去掉
-                state['q'] = msg.replace(name, person)
-                return True  # 内容里有bot名字的话会默认触发
+                msg = msg.replace(name, person)
+                nothing_to_bot = False
+                break
+
         gid = str(event.group_id)
         prob = prob_settings[gid] if gid in prob_settings else 0.05  # 默认触发率5%
-        if random() > prob:
+        if nothing_to_bot and random() > prob:
             return False
         else:
             ai_reply = ai_chat(msg)
@@ -109,7 +116,7 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
                 return False
             else:
                 reply, confidence = ai_chat(msg)
-                if reply in BAN_EXPRESSION:
+                if reply in BAN_EXPRESSION or len(reply) > 50:
                     return False
             logger.debug(f'{msg} 获得触发率 {confidence:.5f}')
             if random() > confidence:
@@ -136,5 +143,15 @@ async def talk(bot: Bot, event: MessageEvent, state: T_State):
 
     if reply.startswith('呵呵'):  # 替掉开头的呵呵
         reply = reply.replace('呵呵', '呼呼')
+    # 一些应该过滤替换的词语
+    if reply == '你好， 我是腾讯小龙女，请把你的问题告诉我吧':
+        reply = 'どうも～'
+    elif reply == '本人行不更名坐不改姓小龙女是也，这个名字很不错吧':
+        reply = '我是守矢神社的风祝，东风谷早苗！'
+    elif '小龙女' in reply or '腾讯' in reply:
+        logger.warning(f'有新的可能需要屏蔽的词语: [{reply}]')
+        for su in SUPERUSERS:
+            await bot.send_private_msg(user_id=su, message=f'出现屏蔽关键词需要处理: [{reply}]', self_id=event.self_id)
+        await chat.finish()
 
-    await chat.finish(reply.replace('腾讯', '幻想乡'))
+    await chat.finish(reply)
