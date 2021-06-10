@@ -149,7 +149,7 @@ async def talk(bot: Bot, event: MessageEvent, state: T_State):
         reply = 'どうも～'
     elif reply == '本人行不更名坐不改姓小龙女是也，这个名字很不错吧':
         reply = '我是守矢神社的风祝，东风谷早苗！'
-    elif reply == '姑姑请求场外支援呀' or '不是姑姑我不明白，这世界变化快':
+    elif reply == '姑姑请求场外支援呀' or reply == '不是姑姑我不明白，这世界变化快':
         await chat.finish()
     elif reply == '尽管看不懂，但姑姑能够理解你此刻复杂的心情~':
         reply = '额...'

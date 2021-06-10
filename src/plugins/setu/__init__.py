@@ -160,7 +160,7 @@ sl说明：
                 continue
             img : Path = data['file']
             logger.debug(f'当前处理本地图片{img.name}')
-            info = f"{data['title']}\n画师：{data['author']}\nPID：{'source'}\n"
+            info = f"{data['title']}\n画师：{data['author']}\nPID：{data['source']}\n"
             try:
                 im_b64 = Image_Handler(img).save2b64()
             except UnidentifiedImageError as imgerr:
