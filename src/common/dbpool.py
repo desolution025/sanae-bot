@@ -3,7 +3,7 @@ import configparser
 from pydantic import BaseModel
 
 # from ipaddress import IPv4Address
-import mysql.connector
+import pymysql
 from dbutils.pooled_db import PooledDB
 
 try:
@@ -43,7 +43,7 @@ class MysqlPool:
 
     def __init__(self, db: str, **kw):
         if self.__class__._pool is None:
-            self.__class__._pool = PooledDB(mysql.connector,
+            self.__class__._pool = PooledDB(pymysql,
                                             mincached=1,
                                             maxcached=5,
                                             maxshared=10,
@@ -54,7 +54,7 @@ class MysqlPool:
                                             reset=True,
                                             **kw,
                                             db=db,
-                                            charset="utf8")  #TODO: 有个不明所以的utf8mb4编码错误
+                                            charset="utf8mb4")  #TODO: 有个不明所以的utf8mb4编码错误
         self._conn = self.__class__._pool.connection()
         self._cursor = self._conn.cursor()
         self.q = True # 查询模式，用于自动在上下文管理中判断是否需要执行commit
@@ -62,7 +62,7 @@ class MysqlPool:
     def _execute(self, cmd, param=()):
         try:
             self._cursor.execute(cmd, param)
-        except mysql.connector.Error as err:
+        except pymysql.Error as err:
             logger.exception(err)
 
     def queryall(self, cmd, param=()):
@@ -113,7 +113,7 @@ class MysqlPool:
         try:
             self._cursor.close()
             self._conn.close()
-        except mysql.connector.Error as err:
+        except pymysql.Error as err:
             logger.exception(err)
 
     def __enter__(self):
@@ -148,6 +148,5 @@ if __name__ == "__main__":
     # print(dbcfg.json())
     # print(dbcfg.dict())
     with QbotDB() as qb:
-        result = qb.queryall('SELECT * FROM userinfo LIMIT 10;')
-        # result = qb.queryone('select * from userinfo limit 1')
+        result = qb.queryall("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'qbotdb' AND TABLE_NAME = 'calltimes' AND column_name like '%%_count';")
         print(result)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sanae_bot"
-version = "0.1.11"
+version = "0.1.12"
 description = "A QQBot base on nonebot2"
 authors = ["AB_Solution"]
 license = "MIT"
@@ -8,7 +8,6 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.8"
 ujson = "4.0.2"
-mysql-connector = "^2.2.9"
 cn2an = "^0.5.9"
 Pillow = "^8.1.0"
 emoji = "^1.2.0"
@@ -20,6 +19,7 @@ nb-cli = "^0.4.1"
 nonebot-adapter-gocq = "^2.0.0-alpha.13"
 toml = "^0.10.2"
 nonebot-plugin-apscheduler = "^0.1.2"
+PyMySQL = "^1.0.2"
 
 [tool.poetry.dev-dependencies]
 
