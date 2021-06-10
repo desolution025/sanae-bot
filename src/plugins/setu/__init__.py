@@ -22,7 +22,8 @@ from src.utils import imgseg, reply_header, FreqLimiter, DailyNumberLimiter
 from src.utils.antiShielding import Image_Handler
 from src.common.easy_setting import MEITUPATH, SETUPATH, BOTNAME
 from src.common.levelsystem import cd_step, UserLevel, FuncLimiter
-from .lolicon import get_setu, get_1200
+from .lolicon import get_lolicon, get_1200
+from .setu_lib import get_setu, increase_setu
 from .others import get_sjbz, get_asmdh, get_nmb, get_pw
 
 
@@ -41,11 +42,14 @@ setu = on_regex(
     )
 
 
+kwdrex = re.compile(r'[,，]')  # 分离逗号做交集搜索
+
+
 @setu.handle()
 async def send_lolicon(bot: Bot, event: MessageEvent, state: T_State):
 
-    if event.message_type == 'group':
-        gid = event.group_id
+    gid = event.group_id if event.message_type=='group' else 0
+    if gid:
         if str(gid) not in sl_settings:
             await setu.finish('''先设置本群sl再使用此功能吧
 [设置sl 最小sl-最大sl]
@@ -136,52 +140,32 @@ sl说明：
                 r18 = 2
         else:
             r18 = 2
-
-    # 链接API，5次错误退出并反馈错误
-    logger.debug('Start getting lolicon API')
-    failed_time = 0
-    while failed_time < 5:
-        try:
-            result = await get_setu(kwd, r18, num)
-            break
-        except BaseException as e:
-            failed_time += 1
-            logger.exception(f"connect api faild {failed_time} time(s)\n{e}")
-    else:
-        logger.error(f'多次链接API失败，当前参数: kwd: [{kwd}], num: {num}, r18: {r18}')
-        dlmt.conn.close()
-        flmt.start_cd(0)
-        await setu.finish('链接API失败, 若多次失败请反馈给维护组', at_sender=True)
-    logger.debug('Receive lolicon API data!')
-
-    # 处理数据
+    
     msg = MessageSegment.reply(id_=event.message_id) if event.message_type == 'group' else MessageSegment.text('') # 由于当前私聊回复有bug所以只在群里设置信息开始为回复消息
-    if result['code'] == 0:
+
+    # 有搜索条件，从本地库中提
+    if kwd:
+        kwds = tuple(kwdrex.split(kwd))
+        success, result = get_setu(gid, kwds, num, r18)
+        if not success:
+            flmt.start_cd(0)
+            dlmt.conn.close()
+            await setu.finish(reply_header(event, result))
+
         count = result['count']  # 返回数量，每次处理过后自减1
-        untreated_ls = []  # 未处理数据列表，遇到本地库中没有的数据要加入这个列表做并发下载
         miss_count = 0  # 丢失数量
         for data in result['data']:
-            pid = data['pid']
-            p = data['p']
-            name = f'{pid}_p{p}'
-            # 按 色图备份路径->美图原文件路径 顺序查找本地图，遇到没有本地路径的等待并发下载处理
-            imgbkup = [f for f in Path(SETUPATH).glob(f'{name}.[jp][pn]*g')]
-            if imgbkup:
-                img = imgbkup[0]
-            else:
-                imgorg = [f for f in (Path(MEITUPATH)/'origin_info').rglob(f'{name}.[jp][pn]*g')]
-                if imgorg:
-                    img = imgorg[0]
-                else:
-                    untreated_ls.append(data)
-                    continue
-            logger.debug(f'当前处理本地图片{name}')
-            info = f"{data['title']}\n画师：{data['author']}\nPID：{name}\n"
+            if data is None:
+                miss_count += 1
+                continue
+            img : Path = data['file']
+            logger.debug(f'当前处理本地图片{img.name}')
+            info = f"{data['title']}\n画师：{data['author']}\nPID：{'source'}\n"
             try:
                 im_b64 = Image_Handler(img).save2b64()
             except UnidentifiedImageError as imgerr:
                 miss_count += 1
-                logger.error(f'failed to open local file: {img}')
+                logger.error(f'failed to open local file: {img}: {imgerr}')
                 continue
             msg += MessageSegment.text(info) + MessageSegment.image(im_b64)
             if count > 1:
@@ -189,14 +173,67 @@ sl说明：
                 count -= 1
             elif result['count'] < num:
                 msg += MessageSegment.text(f'\n=====================\n没搜到{num}张，只搜到这些了')
-            
-        # 对未处理过的数据进行并发下载，只下载1200做临时使用
-        async with httpx.AsyncClient() as client:
-            task_ls = []
-            for imgurl in [d['url'] for d in untreated_ls]:
-                task_ls.append(client.get(get_1200(imgurl), timeout=120))
-            imgs = await gather(*task_ls, return_exceptions=True)
-            
+
+    # 无搜索条件，链接API，5次错误退出并反馈错误
+    else:
+        logger.debug('Start getting lolicon API')
+        failed_time = 0
+        while failed_time < 5:
+            try:
+                result = await get_lolicon(kwd, r18, num)
+                break
+            except BaseException as e:
+                failed_time += 1
+                logger.exception(f"connect api faild {failed_time} time(s)\n{e}")
+        else:
+            logger.error(f'多次链接API失败，当前参数: kwd: [{kwd}], num: {num}, r18: {r18}')
+            dlmt.conn.close()
+            flmt.start_cd(0)
+            await setu.finish('链接API失败, 若多次失败请反馈给维护组', at_sender=True)
+        logger.debug('Receive lolicon API data!')
+
+        # 处理数据
+        if result['code'] == 0:
+            count = result['count']  # 返回数量，每次处理过后自减1
+            untreated_ls = []  # 未处理数据列表，遇到本地库中没有的数据要加入这个列表做并发下载
+            miss_count = 0  # 丢失数量
+            for data in result['data']:
+                pid = data['pid']
+                p = data['p']
+                name = f'{pid}_p{p}'
+                # 按 色图备份路径->美图原文件路径 顺序查找本地图，遇到没有本地路径的等待并发下载处理
+                imgbkup = [f for f in Path(SETUPATH).glob(f'{name}.[jp][pn]*g')]
+                if imgbkup:
+                    img = imgbkup[0]
+                else:
+                    imgorg = [f for f in (Path(MEITUPATH)/'origin_info').rglob(f'{name}.[jp][pn]*g')]
+                    if imgorg:
+                        img = imgorg[0]
+                    else:
+                        untreated_ls.append(data)
+                        continue
+                logger.debug(f'当前处理本地图片{name}')
+                info = f"{data['title']}\n画师：{data['author']}\nPID：{name}\n"
+                try:
+                    im_b64 = Image_Handler(img).save2b64()
+                except UnidentifiedImageError as imgerr:
+                    miss_count += 1
+                    logger.error(f'failed to open local file: {img}: {imgerr}')
+                    continue
+                msg += MessageSegment.text(info) + MessageSegment.image(im_b64)
+                if count > 1:
+                    msg += MessageSegment.text('\n=====================\n')
+                    count -= 1
+                elif result['count'] < num:
+                    msg += MessageSegment.text(f'\n=====================\n没搜到{num}张，只搜到这些了')
+                
+            # 对未处理过的数据进行并发下载，只下载1200做临时使用
+            async with httpx.AsyncClient() as client:
+                task_ls = []
+                for imgurl in [d['url'] for d in untreated_ls]:
+                    task_ls.append(client.get(get_1200(imgurl), timeout=120))
+                imgs = await gather(*task_ls, return_exceptions=True)
+                
             for i, data in enumerate(untreated_ls):
                 if isinstance(imgs[i], BaseException):
                     miss_count += 1
@@ -228,27 +265,29 @@ sl说明：
                 msg += MessageSegment.text(f'\n有{miss_count}张图丢掉了，{BOTNAME}也不知道丢到哪里去了T_T')
             elif miss_count == 1:
                 msg += MessageSegment.text(f'{BOTNAME}拿来了图片但是弄丢了呜呜T_T')
-
-        try:
-            await setu.send(msg)
-        except NetworkError as err:
-            logger.error(f'Maybe callout error happend: {err}')
-        except AdapterException as err:
-            logger.error(f"Some Unkown error: {err}")
-
-        # cd = cd_step(userinfo.level, 150)
-        # flmt.start_cd(cd)
-
-        if miss_count < result['count']:
-            if not in_free:
-                cost = (result['count'] - miss_count) * 3  # 返回数量可能少于调用量，并且要减去miss的数量
-                userinfo.turnover(-cost)  # 如果超过每天三次的免费次数则扣除相应资金
-            dlmt.increase()  # 调用量加一
         else:
-            flmt.start_cd(0)  # 一张没得到也刷新CD
+            flmt.start_cd(0)
             dlmt.conn.close()
+            await setu.finish(msg + MessageSegment.text('获取涩图失败，请稍后再试'))
 
-        # 下载原始图片做本地备份
+    try:
+        await setu.send(msg)
+    except NetworkError as err:
+        logger.error(f'Maybe callout error happend: {err}')
+    except AdapterException as err:
+        logger.error(f"Some Unkown error: {err}")
+
+    if miss_count < result['count']:
+        if not in_free:
+            cost = (result['count'] - miss_count) * 3  # 返回数量可能少于调用量，并且要减去miss的数量
+            userinfo.turnover(-cost)  # 如果超过每天三次的免费次数则扣除相应资金
+        dlmt.increase()  # 调用量加一
+    else:
+        flmt.start_cd(0)  # 一张没得到也刷新CD
+        dlmt.conn.close()
+
+    # 下载原始图片做本地备份
+    if not kwd:
         async with httpx.AsyncClient() as bakeuper:
             backup_ls = []
             json_ls = []
@@ -285,14 +324,14 @@ sl说明：
                 with jsonfp.open('w', encoding='utf-8') as j:
                     json.dump(json_ls[i], j, ensure_ascii=False, escape_forward_slashes=False, indent=4)
                     logger.info(f'Generated json {jsonfp.absolute()}')
-        return
+                increase_setu(**json_ls[i])
 
-    elif result['code'] == 404:
-        await setu.send(msg + MessageSegment.text(f'没有找到{kwd}的涩图，试试其他标签吧~'))
-    else:
-        await setu.send(msg + MessageSegment.text('获取涩图失败，请稍后再试'))
-    flmt.start_cd(0)
-    dlmt.conn.close()
+    # elif result['code'] == 404:
+    #     await setu.send(msg + MessageSegment.text(f'没有找到{kwd}的涩图，试试其他标签吧~'))
+    # else:
+    #     await setu.send(msg + MessageSegment.text('获取涩图失败，请稍后再试'))
+    # flmt.start_cd(0)
+    # dlmt.conn.close()
 
 
 #—————————————————杂项图片API—————————————————————

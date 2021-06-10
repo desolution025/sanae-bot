@@ -3,7 +3,7 @@ import time
 from random import gauss
 from datetime import date
 from pathlib import Path
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Sequence, Tuple
 from base64 import b64encode
 import hmac
 
@@ -187,7 +187,7 @@ class DailyNumberLimiter:
     with QbotDB() as conn:
         # 查询数据库中所有存在的功能的名称存入列表中
         _count_tuple =  conn.queryall("SELECT COLUMN_NAME FROM information_schema.COLUMNS "
-        "WHERE TABLE_SCHEMA = 'qbotdb' AND TABLE_NAME = 'calltimes' AND column_name like '%_count';")
+        "WHERE TABLE_SCHEMA = 'qbotdb' AND TABLE_NAME = 'calltimes' AND column_name like '%%_count';")
         func_name_ls = list(map(lambda x: x[0].split('_')[0], _count_tuple))
         logger.info(f'当前数据库内功能限制列表：{str(func_name_ls)}')
         del _count_tuple
@@ -334,6 +334,16 @@ class PagingBar:
 def get_hash_code(salt: str, msg: str):
     """获得MD5哈希值"""
     return hmac.new(key=salt.encode('utf-8'), msg=str(msg).encode('utf-8'), digestmod='MD5').hexdigest()
+
+
+def concat_seq(*args):
+    """连接列表或元组"""
+
+    comb = args[0]
+    assert isinstance(comb, (list, tuple)) and all(map(lambda x: isinstance(x, type(comb)), args[1:])), '参数必须统一为list或tuple'
+    for ele in args[1:]:
+        comb += ele
+    return comb
 
 
 if __name__ == "__main__":

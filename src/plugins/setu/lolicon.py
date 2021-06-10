@@ -8,7 +8,7 @@ except ImportError:
 API = 'https://api.lolicon.app/setu/v1'
 
 
-async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) -> dict:
+async def get_lolicon(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) -> dict:
     """
     :Summary:
 
@@ -25,8 +25,6 @@ async def get_setu(kwd: str='', r18: int=0, num: int=1, size1200: bool=False) ->
         json: {
             ``code``: int 返回码，可能值详见后续部分
             ``msg``: string 错误信息之类的
-            ``quota``: int 剩余调用额度
-            ``quota_min_ttl``: int 距离下一次调用额度恢复(+1)的秒数
             ``count``: int 结果数
             ``data``: list[dict(setu)] 色图数据列表
             }
