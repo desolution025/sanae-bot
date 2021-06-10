@@ -77,6 +77,7 @@ BAN_EXPRESSION = ('姑姑请求场外支援呀',
                 '这个…我真的听不懂',
                 '不明白你说的什么意思',
                 '尽管看不懂，但姑姑能够理解你此刻复杂的心情~',
+                '不是姑姑我不明白，这世界变化快',
                 '哈哈哈，看不懂',
                 '你好， 我是腾讯小龙女，请把你的问题告诉我吧',
                 '不明白你的意思，我们还是聊聊今天的新闻吧',
@@ -148,6 +149,10 @@ async def talk(bot: Bot, event: MessageEvent, state: T_State):
         reply = 'どうも～'
     elif reply == '本人行不更名坐不改姓小龙女是也，这个名字很不错吧':
         reply = '我是守矢神社的风祝，东风谷早苗！'
+    elif reply == '姑姑请求场外支援呀' or '不是姑姑我不明白，这世界变化快':
+        reply = '...哇卡奶~'
+    elif reply == '尽管看不懂，但姑姑能够理解你此刻复杂的心情~':
+        reply = '额...'
     elif '小龙女' in reply or '腾讯' in reply:
         logger.warning(f'有新的可能需要屏蔽的词语: [{reply}]')
         for su in SUPERUSERS:
