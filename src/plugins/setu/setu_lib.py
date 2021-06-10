@@ -118,9 +118,9 @@ def increase_setu(pid: int, p: int, uid: int, title: str, author: str, url: str,
         qcmd = 'SELECT 1 FROM lolicon WHERE pid=%s AND p=%s LIMIT 1;'
         qparams = (pid, p)
         if glrdb.queryone(qcmd, qparams):
-            logger.warning(f"Record [{str(pid) + '_' + str(p)}] has exists")
+            logger.warning(f"Record [{str(pid) + '_p' + str(p)}] has exists")
         else:
             cmd = "INSERT INTO lolicon (pid, p, uid, title, author, url, r18, tags) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
             params = (pid, p, uid, title, author, url, r18, ','.join(tags))
             glrdb.insert(cmd, params)
-            logger.info(f"Insert one record into lolicon: {str(pid) + '_' + str(p)}")
+            logger.info(f"Insert one record into lolicon: {str(pid) + '_p' + str(p)}")
