@@ -69,7 +69,8 @@ async def prob_handle(bot: Bot, event: GroupMessageEvent, state: T_State):
 
 
 # 过滤的语句
-BAN_MESSAGE = ("早苗已经吃饱了~早苗没有幽幽子那么能吃拉~！\n早苗的每顿饭时段为 6、12、17、23",)
+BAN_MESSAGE = ("""早苗已经吃饱了~早苗没有幽幽子那么能吃拉~！
+	早苗的每顿饭时段为 6、12、17、23""",)
 
 
 # 在这个里面的就不要触发了
@@ -91,7 +92,8 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
     否则真实触发率为 群设置聊天触发率 * 返回信息的可信度
     """
     msg = event.message.extract_plain_text()
-    if not msg or len(msg) > 50 or event.raw_message in BAN_MESSAGE:
+    if not msg or len(msg) > 50 or event.raw_message in BAN_MESSAGE or\
+        event.raw_message == '钓鱼' and event.user_id in (1538482349, 2503554271, 1431906058, 2080247830, 2021507926, 2078304161, 1979853134, 2974922146, 1670225564):
         return False
     # 回复别人的对话不会触发
     for seg in event.message:
