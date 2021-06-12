@@ -1,7 +1,8 @@
 from pathlib import Path
 from datetime import datetime,timedelta
 
-from nonebot import load_plugins, on_shell_command
+from nonebot import load_plugins, on_shell_command, get_bots
+from nonebot.plugin import on_message
 from nonebot.message import run_preprocessor
 from nonebot.matcher import Matcher
 from nonebot.rule import ArgumentParser
@@ -13,6 +14,7 @@ from nonebot_adapter_gocq.event import Event, MessageEvent, NoticeEvent, Private
 from nonebot_adapter_gocq.permission import PRIVATE_FRIEND
 
 from src.common.verify import Group_Blocker, User_Blocker, Enable_Group
+from src.common.rules import full_match
 from src.common import logger
 
 
@@ -22,7 +24,6 @@ parser.add_argument("-t", "--time", type=int)
 
 
 warrant = on_shell_command('授权', parser=parser, permission=SUPERUSER|PRIVATE_FRIEND)
-
 
 @warrant.handle()
 async def authorize(bot: Bot, event: PrivateMessageEvent, state: T_State):
@@ -59,6 +60,15 @@ async def global_switch_filter(mathcer: Matcher, bot: Bot, event: Event, state:T
         # for p in filter(lambda x: not (x.startswith('__') and x.endswith('__')), dir(event)):
         #     data[p] = getattr(event, p)
         # event = PrivateMessageSentEvent(**data)
+
+
+connection_report = on_message(rule=full_match('status'), permission=SUPERUSER)
+
+@connection_report.handle()
+async def report_status(bot: Bot):
+    bots_dict = get_bots()
+    msg = f'{len(bots_dict)} connection(s):\n' + '\n'.join([q for q in bots_dict])
+    await connection_report.send(msg)
 
 
 # store all subplugins
