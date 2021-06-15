@@ -163,6 +163,10 @@ sl说明：
             info = f"{data['title']}\n画师：{data['author']}\nPID：{data['source']}\n"
             try:
                 im_b64 = Image_Handler(img).save2b64()
+            except OSError as err:
+                miss_count += 1
+                logger.error(f'File {img} may be damaged: {err}')
+                continue
             except UnidentifiedImageError as imgerr:
                 miss_count += 1
                 logger.error(f'failed to open local file: {img}: {imgerr}')
