@@ -93,7 +93,7 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
     """
     msg = event.message.extract_plain_text()
     if not msg or len(msg) > 50 or event.raw_message in BAN_MESSAGE or\
-        event.raw_message == '钓鱼' and event.user_id in (1538482349, 2503554271, 1431906058, 2080247830, 2021507926, 2078304161, 1979853134, 2974922146, 1670225564):
+        event.raw_message == '钓鱼':
         return False
     # 回复别人的对话不会触发
     for seg in event.message:
