@@ -55,7 +55,7 @@ async def three_clock():
                 await bot.send_group_msg(group_id=g, message=choice(TEATIME_ATTACH))
                 asyncio.sleep(15)  # 结束上一个群的发送开始发送下一个群的间隔
         except ActionFailed as err:
-            logger.error('Maybe too intensive to send msg, cause error: {err}')
+            logger.error(f'Maybe too intensive to send msg, cause error: {err}')
 
 
 # 由用户自定义提醒功能时会需要这个添加、删除定时器的方式
