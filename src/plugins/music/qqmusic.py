@@ -24,7 +24,7 @@ async def search_qm(keyword, result_num: int=3):
                 url="http://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp",
                 params=params,
                 headers=headers,
-                timeout=3
+                timeout=30
             )
             res_data = resp.json()
     except Exception as e:
@@ -49,7 +49,7 @@ async def search_qm(keyword, result_num: int=3):
 
 if __name__ == "__main__":
     import asyncio
-    song_list = asyncio.run(search_qm('六弦アリス - スターチスが眠る丘', result_num=5))
+    song_list = asyncio.run(search_qm('英雄', result_num=5))
     if song_list:
         for song in song_list:
             print(song)

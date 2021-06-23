@@ -45,7 +45,11 @@ def create_str_page(music_pg: dict) -> dict:
     return str_pg
 
 #生成网易云与QQ音乐的混合列表，返回混合的索引列表与文字列表
-def mix_song_list(netease:dict , qqmusic: dict, step: int = 3) -> dict:
+def mix_song_list(netease:list, qqmusic: list, step: int = 3) -> dict:
+    if netease is None:
+        netease = []
+    if qqmusic is None:
+        qqmusic = []
     max_len = max(len(netease), len(qqmusic))
     srlnum = 0
     tmp163 = 0
