@@ -41,7 +41,7 @@ async def ofl_rmd(bot: Bot):
             notifier : Bot = choice(ol_bots)
             try:
                 for su in SUPERUSERS:
-                    await notifier.send_private_msg(user_id=su, message=f' {bot.self_id}disconnected at {dc_time}')
+                    await notifier.send_private_msg(user_id=su, message=f' {bot.self_id} disconnected at {dc_time}')
                 break
             except BaseException as err:
                 logger.error(f'Bot {notifier.self_id} failed to send offline notification: {err}')

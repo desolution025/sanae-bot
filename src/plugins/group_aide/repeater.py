@@ -59,4 +59,7 @@ repeater = on(rule=sv_sw(plugin_name, plugin_usage, '群助手')&store_talk)
 
 @repeater.handle()
 async def standby(bot: Bot, event: GroupMessageEvent, state: T_State):
-    await repeater.finish(Message(state['raw_msg']))
+    gr = cur_msg[event.group_id]
+    # 大量消息同时发出的时候会因为异步任务队列机制导致规则与执行动作有时间差，需要在触发复读时再判断一次确保只复读一次
+    if event.self_id not in gr['uid_ls']:
+        await repeater.finish(Message(state['raw_msg']))
