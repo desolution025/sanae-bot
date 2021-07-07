@@ -21,10 +21,9 @@ plugin_usage = '自动推送鸡汤，祝你每天都充满正能量\n自动推�
 
 
 JOBNAME = 'pcs'  # 任务id
-# CYCLE = 100  # 任务周期 分钟
-# VARIATION = 1200  # 推送时间随机度 秒
-CYCLE = 1  # 任务周期 分钟
-VARIATION = 10  # 推送时间随机度 秒
+CYCLE = 100  # 任务周期 分钟
+VARIATION = 1200  # 推送时间随机度 秒
+
 
 scheduler : BaseScheduler = require('nonebot_plugin_apscheduler').scheduler
 pushdu = MatcherGroup(type='message', permission=GROUP)
@@ -105,8 +104,8 @@ async def start_du(bot: Bot, event: GroupMessageEvent):
     job = scheduler.add_job(push_poisonous_chicken_soup, 'interval', minutes=CYCLE, id=f"{JOBNAME}{gid}", jitter=VARIATION, misfire_grace_time=30, args=[gid])
     du_groups.append(gid)
     save_du_groups()
-    await du_on.finish('好的，我要开始讲鸡汤啦')
-    if datetime.now().hour < 7 or datetime.now().hour > 21:
+    await du_on.send('好的，我要开始讲鸡汤啦')
+    if datetime.now().hour < 7 or datetime.now().hour >= 21:
         job.pause()
         await asleep(1.5)
         await du_on.finish('emm, 但是今天太晚了，明天再讲吧')
