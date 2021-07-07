@@ -3,9 +3,10 @@ from datetime import datetime
 
 from nonebot import on_notice, get_driver, get_bots
 from nonebot_adapter_gocq.bot import Bot
-from nonebot_adapter_gocq.event import LifecycleMetaEvent, GroupDecreaseNoticeEvent
+from nonebot_adapter_gocq.event import GroupDecreaseNoticeEvent, GroupIncreaseNoticeEvent
 # from nonebot import get_loaded_plugins
 
+from src.common import refresh_gb_dict
 from src.common.easy_setting import SUPERUSERS
 from src.common.rules import comman_rule
 from src.common.log import logger
@@ -25,6 +26,7 @@ async def online_remind(bot: Bot):
     # manager_pligins = '\n'.join(map(lambda x: x.module._plugin_name, filter(lambda obj: hasattr(obj.module, '_plugin_name'), plugins)))
     # msg = 'online desu\n[当前加载的插件]：\n' + normal_plguins + '\n[Bot管理插件]：\n' + manager_pligins
     msg = 'online desu'
+    await refresh_gb_dict()
     for sps in SUPERUSERS:
         await bot.send_private_msg(user_id=sps, message=msg)
 
@@ -34,6 +36,7 @@ async def online_remind(bot: Bot):
 async def ofl_rmd(bot: Bot):
     dc_time = datetime.now().time().strftime("%H:%M:%S")
     logger.critical(f'Bot {bot.self_id} disconnected')
+    await refresh_gb_dict()
 
     ol_bots = [bt for strid, bt in get_bots().items()]
     if ol_bots:

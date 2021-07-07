@@ -2,7 +2,7 @@ from pathlib import Path
 from datetime import datetime,timedelta
 
 from nonebot import load_plugins, on_shell_command, get_bots
-from nonebot.plugin import on_message
+from nonebot.plugin import on_message, on_request
 from nonebot.message import run_preprocessor
 from nonebot.matcher import Matcher
 from nonebot.rule import ArgumentParser
@@ -10,12 +10,13 @@ from nonebot.typing import T_State
 from nonebot.permission import SUPERUSER
 from nonebot.exception import IgnoredException
 from nonebot_adapter_gocq.bot import Bot
-from nonebot_adapter_gocq.event import Event, MessageEvent, NoticeEvent, PrivateMessageEvent, GroupIncreaseNoticeEvent, GroupDecreaseNoticeEvent, PrivateMessageSentEvent
+from nonebot_adapter_gocq.event import Event, MessageEvent, NoticeEvent, PrivateMessageEvent, GroupIncreaseNoticeEvent, GroupDecreaseNoticeEvent
 from nonebot_adapter_gocq.permission import PRIVATE_FRIEND
+from nonebot_adapter_gocq.exception import ActionFailed
 
 from src.common.verify import Group_Blocker, User_Blocker, Enable_Group
 from src.common.rules import full_match
-from src.common import logger
+from src.common import logger, refresh_gb_dict, show_gb_dict
 
 
 parser = ArgumentParser()
@@ -69,6 +70,34 @@ async def report_status(bot: Bot):
     bots_dict = get_bots()
     msg = f'{len(bots_dict)} connection(s):\n' + '\n'.join([q for q in bots_dict])
     await connection_report.send(msg)
+
+
+groups_report = on_message(rule=full_match('groups'), permission=SUPERUSER)
+
+@groups_report.handle()
+async def report_gb_dict(bot: Bot):
+    await refresh_gb_dict()
+    map_list = [f'{gid}：{[bt.self_id for bt in bots]}' for gid, bots in show_gb_dict().items()]  # 每个群与对应bot的映射列表
+    
+    msg = '\n'.join([f'{i + 1}. {m}' for i, m in enumerate(map_list)])
+
+    try:
+        await groups_report.send('已刷新群内bot映射：\n' + msg)
+    except ActionFailed as e:
+        logger.error(f'发送此条消息失败：\n{msg}\nErro:{e}')
+        await groups_report.finish('发送消息失败，账号疑似被风控')
+
+
+def bot_groups_change_rule(bot: Bot, event, state: T_State):
+    if isinstance(event, (GroupIncreaseNoticeEvent, GroupDecreaseNoticeEvent)) and event.user_id == event.self_id:
+        return True
+
+group_change = on_request(rule=bot_groups_change_rule)
+
+@group_change.handle()
+async def refresh_gb(bot: Bot):
+    """当bot自己发生入群退群事件时自动刷新群与bot映射列表"""
+    await refresh_gb_dict()
 
 
 # store all subplugins

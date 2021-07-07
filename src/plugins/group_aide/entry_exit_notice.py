@@ -6,7 +6,7 @@ from random import choice
 from nonebot import MatcherGroup
 from nonebot_adapter_gocq.event import GroupIncreaseNoticeEvent, GroupDecreaseNoticeEvent
 
-from src.common import Bot, GroupMessageEvent, T_State, Message, logger
+from src.common import Bot, GroupMessageEvent, T_State, Message, logger, CANCEL_EXPRESSION
 from src.common.rules import sv_sw, comman_rule
 
 
@@ -160,6 +160,8 @@ async def edit_speech(bot: Bot, event: GroupMessageEvent, state: T_State):
 @speech_editor.handle()
 async def wl_secondary_operation(bot: Bot, event: GroupMessageEvent, state: T_State):
     gid = str(event.group_id)
+    if event.message.extract_plain_text().strip() in CANCEL_EXPRESSION:
+        await speech_editor.finish('已退出编辑操作')
     if gid not in welcome_settings:
         welcome_settings[gid] = DEFAULT_SPEECH
     settings = welcome_settings[gid]
