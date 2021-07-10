@@ -135,7 +135,7 @@ def inputting_interaction(cancel_expression: Optional[Union[str, Tuple]]=None,
 
             # 验证自定义验证函数
             if verify_expression is not None:
-                result = call_source(func, bot, event, state, matcher)  # 获得自定义验证函数结果
+                result = call_source(verify_expression, bot, event, state, matcher)  # 获得自定义验证函数结果
                 adopt = True
                 if not isinstance(verify_prompt, dict) and not result:
                     adopt = False
