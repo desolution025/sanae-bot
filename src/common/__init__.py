@@ -6,7 +6,8 @@ from inspect import signature
 from functools import wraps
 
 from nonebot import get_bots
-from nonebot.typing import T_Handler, Matcher
+from nonebot.typing import T_Handler
+from nonebot.matcher import Matcher
 from nonebot_adapter_gocq.bot import Bot
 from nonebot_adapter_gocq.message import MessageSegment, Message
 
