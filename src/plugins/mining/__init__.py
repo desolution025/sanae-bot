@@ -39,22 +39,29 @@ async def can_start(bot: Bot, event: MessageEvent, state: T_State):
     
     # 条件满足，询问投资数据
     state['user'] = user
-    await open_mine.send(f'您当前资金为 {user.fund}，请输入需要为该矿场投入的资金\n(投入资金与该矿场产出率成正比，范围200-1000\n输入"取消"退出本操作)')
+    await open_mine.send(f'您当前资金为 {user.fund}，请输入需要为该矿场投入的资金\n(投入资金与该矿场产出率成正比，范围200-1000\n输入"取消"退出本操作)', at_sender=True)
 
 
 def verify_investment(bot: Bot, event: MessageEvent, state: T_State):
     """投资验证，需输入200-1000以内的数字"""
     arg = event.message.extract_plain_text().strip()
     if not arg.isdigit():
-        return 'a'
+        return False
     arg = int(arg)
     if arg < 200 or arg > 1000:
-        return 'b'
+        return False
+    state['capital'] = arg
+    return True
 
 
 @open_mine.receive()
 @inputting_interaction(cancel_expression=CANCEL_EXPRESSION,
                         cancel_prompt='已退出开辟矿场操作',
-                        verify_expression=verify_investment)
+                        verify_expression=verify_investment,
+                        verify_prompt='请输入200-1000以内的数字参数，输入"取消"退出当前操作',
+                        verify_addition='reply',
+                        verify_cancel_prompt='连续输入三次错误，已自动为您退出当前操作',
+                        verify_cancel_addition='reply')
 async def invest(bot: Bot, event: MessageEvent, state: T_State):
-    pass
+    # 这里要读取用户符卡列表
+    await open_mine.send('请选择要为此矿洞附加的符卡:\n\n输入"取消"退出当前操作', at_sender=True)
