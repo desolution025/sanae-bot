@@ -4,7 +4,7 @@ from typing import Union
 from nonebot import MatcherGroup
 from nonebot.rule import ArgumentParser
 
-from src.common import Bot, MessageEvent, GroupMessageEvent, MessageSegment, T_State, CANCEL_EXPRESSION
+from src.common import Bot, MessageEvent, GroupMessageEvent, MessageSegment, T_State, CANCEL_EXPRESSION, inputting_interaction
 from src.common.rules import full_match
 from src.common.levelsystem import UserLevel
 from src.common.dbpool import QbotDB
@@ -42,11 +42,19 @@ async def can_start(bot: Bot, event: MessageEvent, state: T_State):
     await open_mine.send(f'您当前资金为 {user.fund}，请输入需要为该矿场投入的资金\n(投入资金与该矿场产出率成正比，范围200-1000\n输入"取消"退出本操作)')
 
 
-@open_mine.receive()
-async def invest(bot: Bot, event: MessageEvent, state: T_State):
+def verify_investment(bot: Bot, event: MessageEvent, state: T_State):
+    """投资验证，需输入200-1000以内的数字"""
     arg = event.message.extract_plain_text().strip()
-    if arg in CANCEL_EXPRESSION:
-        await open_mine.finish('已退出开启矿场操作')
-
     if not arg.isdigit():
-        await open_mine.reject('请输入200-1000内数字，输入"取消"退出本操作')
+        return 'a'
+    arg = int(arg)
+    if arg < 200 or arg > 1000:
+        return 'b'
+
+
+@open_mine.receive()
+@inputting_interaction(cancel_expression=CANCEL_EXPRESSION,
+                        cancel_prompt='已退出开辟矿场操作',
+                        verify_expression=verify_investment)
+async def invest(bot: Bot, event: MessageEvent, state: T_State):
+    pass
