@@ -70,7 +70,8 @@ async def prob_handle(bot: Bot, event: GroupMessageEvent, state: T_State):
 
 # 过滤的语句
 BAN_MESSAGE = ("""早苗已经吃饱了~早苗没有幽幽子那么能吃拉~！
-	早苗的每顿饭时段为 6、12、17、23""",)
+	早苗的每顿饭时段为 6、12、17、23""",
+    "钓鱼")
 
 
 # 在这个里面的就不要触发了
@@ -94,8 +95,7 @@ def chat_checker(bot: Bot, event: MessageEvent, state: T_State):
     否则真实触发率为 群设置聊天触发率 * 返回信息的可信度
     """
     msg = event.message.extract_plain_text()
-    if not msg or len(msg) > 50 or event.raw_message in BAN_MESSAGE or\
-        event.raw_message == '钓鱼':
+    if not msg or len(msg) > 50 or msg in BAN_MESSAGE:
         return False
     # 回复别人的对话不会触发
     for seg in event.message:
@@ -157,10 +157,12 @@ async def talk(bot: Bot, event: MessageEvent, state: T_State):
         await chat.finish()
     elif reply == '尽管看不懂，但姑姑能够理解你此刻复杂的心情~':
         reply = '额...'
-    elif '小龙女' in reply or '腾讯' in reply:
+    elif reply == '小龙女自己也不清楚，你可以告诉小龙女吗？':
+        reply = f'{BOTNAME}自己也不知道呀'
+    elif '小龙女' in reply or '腾讯' in reply or '姑姑' in reply:
         logger.warning(f'有新的可能需要屏蔽的词语: [{reply}]')
         for su in SUPERUSERS:
-            await bot.send_private_msg(user_id=su, message=f'出现屏蔽关键词需要处理: [{reply}]', self_id=event.self_id)
+            await bot.send_private_msg(user_id=su, message=f'出现屏蔽关键词需要处理: [{reply}]\n触发的对话：[{q}]', self_id=event.self_id)
         await chat.finish()
 
     await chat.finish(reply)
