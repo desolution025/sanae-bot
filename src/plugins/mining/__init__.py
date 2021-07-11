@@ -1,13 +1,12 @@
 from functools import partial
 from typing import Union
+from asyncio import sleep as asleep
 
 from nonebot import MatcherGroup
-from nonebot.rule import ArgumentParser
 
 from src.common import Bot, MessageEvent, GroupMessageEvent, MessageSegment, T_State, CANCEL_EXPRESSION, inputting_interaction
-from src.common.rules import full_match
+from src.common.rules import full_match, sv_sw
 from src.common.levelsystem import UserLevel
-from src.common.dbpool import QbotDB
 from .mine import *
 from src.utils import reply_header
 
@@ -16,10 +15,13 @@ plugin_name = '挖矿'
 plugin_usage = ''
 
 
-mining = MatcherGroup(type='message', priority=2)
+mining = MatcherGroup(type='message', rule=sv_sw(plugin_name, plugin_usage), priority=2)
 
 
-open_mine = mining.on_message(rule=full_match('开矿场'))
+#——————————————————开矿——————————————————#
+
+
+open_mine = mining.on_message(rule=full_match('开矿场')&sv_sw(plugin_name, plugin_usage))
 
 
 @open_mine.handle()
@@ -39,7 +41,7 @@ async def can_start(bot: Bot, event: MessageEvent, state: T_State):
     
     # 条件满足，询问投资数据
     state['user'] = user
-    await open_mine.send(f'您当前资金为 {user.fund}，请输入需要为该矿场投入的资金\n(投入资金与该矿场产出率成正比，范围200-1000\n输入"取消"退出本操作)', at_sender=True)
+    await open_mine.send(f'您当前资金为 {user.fund}，请输入需要为该矿场投入的资金\n(投入资金与该矿场产出率成正比，范围200-1000)\n输入"取消"退出本操作', at_sender=True)
 
 
 def verify_investment(bot: Bot, event: MessageEvent, state: T_State):
@@ -65,3 +67,126 @@ def verify_investment(bot: Bot, event: MessageEvent, state: T_State):
 async def invest(bot: Bot, event: MessageEvent, state: T_State):
     # 这里要读取用户符卡列表
     await open_mine.send('请选择要为此矿洞附加的符卡:\n\n输入"取消"退出当前操作', at_sender=True)
+
+
+@open_mine.receive()
+async def use_item(bot: Bot, event: MessageEvent, state: T_State):
+    location = 0 if event.message_type == 'private' else event.group_id
+    new_mine = Mine(owner=event.user_id, location=location, start_up_capital=state['capital'])
+    UserLevel(event.user_id).turnover(-state['capital'])
+
+    name = event.sender.card if event.message_type == 'group' else event.sender.nickname
+    if not name.strip():
+        name = str(event.sender.user_id)
+
+    msg = f"""您成功开发了一个新矿洞
+——————————
+矿场主：{get_name(event)}
+矿洞编号：{new_mine.number}
+结构稳定性：{new_mine.stability}
+金矿出产系数：{new_mine.oof_prob}
+符卡出产系数：{new_mine.card_prob}
+物品出产系数：{new_mine.item_prob}
+当前入场费：{new_mine.fee}
+——————————
+招募优秀的矿工来挖掘宝藏吧~
+"""
+    await open_mine.finish(msg)
+
+
+#——————————————————采矿——————————————————#
+
+
+conduct_mining = mining.on_command('开采', aliases={'挖矿, 采矿'})
+
+
+@conduct_mining.handle()
+async def conduct_args(bot: Bot, event: MessageEvent, state: T_State):
+    args = event.message.extract_plain_text().strip().split('符卡')
+    reply = partial(reply_header, event=event)
+
+    if len(args) > 2:
+        await conduct_mining.finish(reply(message='请勿指定多个符卡参数，参照使用说明'))
+
+    # 解析矿洞编号
+    mine_number = args[0]
+    if not mine_number:
+        await conduct_mining.send(reply('请先选择开采的矿洞编号:\n——————————\n' + mining_list() + '\n——————————\n输入"取消"退出操作'))
+        return
+    if not mine_number.isdigit():
+        await conduct_mining.finish(reply('矿洞编号为数字参数，参照使用说明'))
+    mine_number = int(mine_number)
+    Mine_Coll = all_mines()
+    if mine_number not in Mine_Coll:
+        await conduct_mining.finish(reply('选择的编号不在开采列表中或已坍塌，先请查询可进行开采的矿洞列表'))
+    state['number'] = mine_number
+
+    # 解析符卡
+    if len(args) == 2:
+        cards = [c for c in args[1].split(' ') if c]  # 去除多余空格，只提取参数
+        if not all(map(lambda c: c.isdigit(), cards)):
+            await conduct_mining.finish(reply('符卡序号应为数字参数，参照使用说明'))
+        if len(cards) > Mine_Coll[mine_number].breadth:
+            await conduct_mining.finish(reply(f'选择的矿洞当前最大支持单次使用{Mine_Coll[mine_number].breadth}张符卡，请重新操作'))
+        # TODO: 还要判断用户是否有符卡以及符卡序号是不是有真实对应
+        state['cards'] = cards
+
+
+@conduct_mining.got('number')
+@inputting_interaction(cancel_expression=CANCEL_EXPRESSION, cancel_prompt='已退出操作')
+async def confirm_number(bot: Bot, event: MessageEvent, state: T_State):
+    arg = event.message.extract_plain_text()
+    reply = partial(reply_header, event=event)
+    if not arg.isdigit():
+        await conduct_mining.finish(reply('矿洞编号为数字参数，参照使用说明'))
+    mine_number = int(arg)
+    if mine_number not in all_mines():
+        await conduct_mining.finish(reply('选择的编号不在开采列表中或已坍塌，先请查询可进行开采的矿洞列表'))
+    state['number'] = mine_number
+
+
+@conduct_mining.got('cards')
+async def confirm_cards(bot: Bot, event: MessageEvent, state: T_State):
+    # TODO: 读取用户可使用符卡列表进行操作
+    return
+
+
+@conduct_mining.handle()
+async def mining_work(bot: Bot, event: MessageEvent, state: T_State):
+    # 确保刚刚操作的时候这个矿洞没有被其他人挖塌
+    if state['number'] not in all_mines():
+        await conduct_mining.finish('噫！就在刚才这个矿洞坍塌了，该说是运气好呢还是~')
+    
+    target : Mine = all_mines[state['number']]
+    use_cards = state['cards'] if 'cards' in state else []
+
+    update, rewards = target.mine(uid=event.user_id, *use_cards)
+    name = get_name(event)
+    if update is not None:
+        oof, cards, items = rewards
+        if all(map(lambda x: not bool(x), rewards)):
+            msg = '很遗憾没有挖到任何物品~'
+        else:
+            msg = '啊，开采到了什么!'
+            if oof:
+                msg += f'\n获得{oof}金币'
+            if cards:
+                msg += f'\n获得符卡{"、".join(cards)}'
+            if items:
+                msg += f'\n获得物品{"、".join(items)}'
+        await conduct_mining.send(msg)
+        await asleep(2)
+
+        # 报告矿洞状态更新 TODO: 重大事件报告矿场主
+        msg = f'{target.number}号深度增加到{target.depth}，由于{name}的采掘，'
+
+        coll_up, fee_up, breadth_change = update
+
+        if coll_up:
+            msg += f'矿洞的坍塌率上升{coll_up}，'
+        if breadth_change:
+            if breadth_change == 1:
+                msg += '挖掘到了宽松地带，矿洞宽度+1'
+            elif breadth_change == -1:
+                msg += '挖掘到了狭窄地带，矿洞宽度-1'
+        await conduct_mining.finish(msg)
