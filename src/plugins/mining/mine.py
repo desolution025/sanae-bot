@@ -1,6 +1,6 @@
-from random import random, randint, choice, choices
+from random import random, randint, choice, choices, gauss
 from datetime import datetime
-from typing import Tuple, Optional, Union
+from typing import Tuple, Optional, Union, Sequence
 
 from src.common.levelsystem import UserLevel
 from src.utils import cgauss
@@ -72,9 +72,9 @@ class Mine:
         self.card_prob = cgauss(map_rate(self.start_up_capital, 200, 1000, 5, 20), 1.8, 0, 100)  # 卡片出产率，符卡
         self.item_prob = cgauss(map_rate(self.start_up_capital, 200, 1000, 5, 20), 1.8, 0, 100)  # 物品出产率，卡片之类的
         self.breadth = 1  # 空间宽广度初始一定是1
-        self.fee = round(self.stability / 20)  # 当前入场费，随回合数上涨
+        self.fee = round(self.start_up_capital / 20)  # 当前入场费，随回合数上涨
         self.depth = 0  # 当前深度，随回合数上涨
-        self.coll_prob = 0.005  # 当前坍塌率，随着深度加高
+        self.coll_prob = self.gen_base_coll_prob()  # 初始坍塌率
         self.income = 0  # 当前获得的收入
         self.distributions = {}  # 矿产分布，这个矿洞能产出的道具以及比率，比率应该会随着深度而成连续噪波变化
         self.status = []  # 状态，如加固、脆弱、矿产率上升下降之类的为key，状态内也为dict，记录剩余持续时间、剩余持续深度、
@@ -86,10 +86,17 @@ class Mine:
             if self.number not in Mines_Collection:
                 Mines_Collection[self.number] = self
                 break
+    def gen_base_coll_prob(self):
+        """生成一个适合用于初始坍塌率的float，概率以0.005为轴成高斯分布"""
+        prob = gauss(0.005, 0.0008)
+        if prob < 0 or prob > 1:  # 防止撞大运生成0-1范围外的几率
+            return self.gen_base_coll_prob()
+        else:
+            return prob
 
     def coll_prob_up(self):
-        """坍塌率上升  TODO: 设计坍塌率上升算法"""
-        coll_up = 0.01
+        """坍塌率上升 上涨幅度与结构稳定性和深度相关，其中有影响不是很大的随机因子"""
+        coll_up = 0.39 / self.stability + self.depth * 0.005 / self.stability + (random() - 0.5) * 0.001
         self.coll_prob += coll_up
         return coll_up
     
@@ -101,7 +108,7 @@ class Mine:
 
     def breadth_change(self):
         """随机改变宽度  TODO: 优化更新宽度算法"""
-        up_prob = 1 / 3 ** self.breadth  # 上升概率，当前宽度越高越难升
+        up_prob = 0.3 ** self.breadth  # 上升概率，当前宽度越高越难升
         down_prob = 0.25  # 下降概率，暂定常数
         dice = random()  # 获取一个随机数
         if dice < up_prob:
@@ -112,7 +119,7 @@ class Mine:
             return -1
         return 0
 
-    def get_oof(self, *cards):
+    def get_oof(self, cards: Sequence[str]):
         """产出金币
 
         产出的概率与数额应该随depth加大而加大
@@ -123,7 +130,7 @@ class Mine:
         else:
             return None
 
-    def get_card(self, *cards):
+    def get_card(self, cards: Sequence[str]):
         """产出符卡
 
         对可能产出的每个符卡进行概率计算，概率与depth和矿洞的符卡产出率应成正相关
@@ -135,7 +142,7 @@ class Mine:
                 rewards.append(name)
         return rewards
             
-    def get_item(self, *cards: str):
+    def get_item(self, cards: Sequence[str]):
         """产出道具
         
         计算方式与符卡类似，TODO: 考虑是否要分开计算，还是合并计算
@@ -151,16 +158,16 @@ class Mine:
                     rewards.append(item)
             return rewards
 
-    def get_rewards(self, cru_op, *cards):
+    def get_rewards(self, cru_op, cards):
         """获得道具，在挖矿成功时调用
 
         Args:
             cru_op (Dict): 当前的挖矿记录，获得的道具将向这个字典中添加
         """
         # 获得道具
-        r_oof = self.get_oof(*cards)
-        r_card = self.get_card(*cards)
-        r_item = self.get_item(*cards)
+        r_oof = self.get_oof(cards)
+        r_card = self.get_card(cards)
+        r_item = self.get_item(cards)
 
         # 更新当前挖矿记录
         cru_op['income'] = r_oof
@@ -168,7 +175,7 @@ class Mine:
 
         return r_oof, r_card, r_item
 
-    def mine(self, uid: int, *cards: str):
+    def mine(self, uid: int, cards: Sequence[str]):
         """执行开采
 
         Args:
@@ -197,10 +204,10 @@ class Mine:
         cru_op = self.sheet[-1]  # 添加步骤之后立刻获得当前步骤的引用
 
         if self.coll_prob < random():
-            self.depth += 1  # 
             coll_up = self.coll_prob_up()
             fee_up = self.price_increase()
             breadth_change = self.breadth_change()
+            self.depth += 1
 
             # 添加玩家最后进入时间，更新玩家状态
             cooling = 60  # 再次进入此矿洞的冷却
@@ -215,16 +222,17 @@ class Mine:
             if 'status' not in self.miners[uid]:
                 self.miners[uid]['status'] = []
             else:
-                self.miners[uid]['status'].append()
+                pass
+                # self.miners[uid]['status'].append()
             
             # 计算奖励
-            r_oof, r_card, r_item = self.get_rewards(cru_op, *cards)
+            r_oof, r_card, r_item = self.get_rewards(cru_op, cards)
     
             return (coll_up, fee_up, breadth_change), (r_oof, r_card, r_item),
 
         else:  # 触发坍塌
             if 'escape' in cards:  # 逃脱符依然能获得奖励
-                r_oof, r_card, r_item = self.get_rewards(cru_op, *cards)
+                r_oof, r_card, r_item = self.get_rewards(cru_op, cards)
                 return None, (r_oof, r_card, r_item)
             self.collapse()
             return None, None
