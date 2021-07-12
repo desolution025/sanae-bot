@@ -1,7 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 import ujson as json
-from typing import Dict, Tuple, Union, Optional, Callable, Literal
+from typing import Dict, Tuple, Union, Optional, Callable, Literal, Sequence
 from inspect import signature
 from functools import wraps
 
@@ -92,7 +92,7 @@ def call_source(func: T_Handler, bot: Bot, event: MessageEvent, state: T_State, 
         return func(*args)
 
 
-def inputting_interaction(cancel_expression: Optional[Union[str, Tuple]]=None,
+def inputting_interaction(cancel_expression: Optional[Union[str, Sequence[str]]]=None,
                         cancel_prompt: Optional[Union[str, Message, MessageSegment]]=None,
                         cancel_addition: Optional[Literal['at', 'reply']]=None,
                         verify_expression: Optional[Callable]=None,
@@ -123,7 +123,7 @@ def inputting_interaction(cancel_expression: Optional[Union[str, Tuple]]=None,
             arg = event.message.extract_plain_text().strip()
             
             # 验证退出命令
-            if isinstance(cancel_expression, tuple) and arg in cancel_expression or isinstance(cancel_expression, str) and arg == cancel_expression:
+            if isinstance(cancel_expression, Sequence) and arg in cancel_expression or isinstance(cancel_expression, str) and arg == cancel_expression:
                 if cancel_prompt is None:
                     await matcher.finish()
                 else:
